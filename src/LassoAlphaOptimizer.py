@@ -40,6 +40,7 @@ class LassoAlphaOptimizer:
         self.test_train_split = test_train_split
         self.P = P
         self.Q = Q
+        self.m = int(test_train_split * self.P * self.Q)
         self.basis_generator = BasisGenerator(P, Q, uv_orientation=True)
         self.blockifier = None
         self.alpha_values = np.logspace(-8, 8, 30)  # Precompute alpha values
@@ -80,24 +81,35 @@ class LassoAlphaOptimizer:
 
         return alpha_values[np.nanargmin(mse_values)]
 
-    def optimize_alphas(self, img_path: str) -> np.ndarray:
+    def optimize_alphas(self, img_input, is_corrupted=False):
         """Optimize alpha parameters for Lasso regression on corrupted image blocks.
 
         Args:
-            img_path (str): Path to the input image file.
+            img_input: Either a path to the input image file (str) or a numpy array containing the image.
 
         Returns:
             np.ndarray: Array of best alpha parameters for each block.
         """
-        self.blockifier = Blockfy(img_path, (self.P, self.Q), self.P)
-        self.blockifier.generate_blocks()
-        corrupted_blocks = self.blockifier.generate_corrupted_blocks(sensed_pixels=self.S)
+        # Handle either file path or numpy array input
+        if isinstance(img_input, str):
+            self.blockifier = Blockfy(img_input, (self.P, self.Q), self.P)
+        else:
+            # Assume it's a numpy array containing the image
+            self.blockifier = Blockfy(img_input, block_shape=(self.P, self.Q), block_step=self.P)
+        
+        if is_corrupted:
+            self.blockifier.generate_blocks()
+            corrupted_blocks = self.blockifier.get_blocks()
+        else:
+            self.blockifier.generate_blocks()
+            corrupted_blocks = self.blockifier.generate_corrupted_blocks(sensed_pixels=self.S)
+        
         basis_matrix = self.basis_generator.generate_basis_matrix()
-        rkf = RepeatedKFold(n_splits=max(2, int(self.S * self.test_train_split)), n_repeats=self.M)
+        rkf = RepeatedKFold(n_splits=self.m, n_repeats=self.M)
 
         best_alphas = Parallel(n_jobs=min(len(corrupted_blocks), -1))(
-            delayed(self._process_block)(corrupted_blocks[i], basis_matrix, self.alpha_values, rkf)
-            for i in tqdm(range(len(corrupted_blocks)), desc="Optimizing alphas", unit="blocks")
+                delayed(self._process_block)(corrupted_blocks[i], basis_matrix, self.alpha_values, rkf)
+                for i in tqdm(range(len(corrupted_blocks)), desc="Optimizing alphas", unit="blocks")
         )
 
         return np.array(best_alphas)
