@@ -42,7 +42,7 @@ class LassoAlphaOptimizer:
         self.Q = Q
         self.basis_generator = BasisGenerator(P, Q, uv_orientation=True)
         self.blockifier = None
-        self.alpha_values = np.logspace(-6, 6, 20)  # Precompute alpha values
+        self.alpha_values = np.logspace(-8, 8, 30)  # Precompute alpha values
 
     def _process_block(self, corrupted_block, basis_matrix, alpha_values, rkf):
         """Process a single block to find the best alpha value.
