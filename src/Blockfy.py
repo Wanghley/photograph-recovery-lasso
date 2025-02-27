@@ -25,20 +25,27 @@ class Blockfy:
         corrupted_blocks (numpy.ndarray): Generated corrupted blocks
     """
 
-    def __init__(self, img_path: str, block_shape: Tuple[int, int], block_step: int):
-        """Initialize the BlockifyImage instance.
+    def __init__(self, img_source: Union[str, np.ndarray], block_shape: Tuple[int, int], block_step: int):
+        """Initialize the Blockfy instance.
 
         Args:
-            img_path (str): Path to the input image file
+            img_source (Union[str, np.ndarray]): Either a path to the input image file or a pre-loaded numpy array
             block_shape (tuple): Shape of blocks to generate (height, width)
             block_step (int): Step size between blocks (stride)
         """
-        self.img = mpimg.imread(img_path)
+        if isinstance(img_source, str):
+            self.img = mpimg.imread(img_source)
+        elif isinstance(img_source, np.ndarray):
+            self.img = img_source
+        else:
+            raise TypeError("img_source must be either a string path or a numpy array")
+            
         self.block_shape = block_shape
         self.height, self.width = self.img.shape
         self.block_step = block_step
         self.img_blocks: Optional[np.ndarray] = None
         self.corrupted_blocks: Optional[np.ndarray] = None
+        
 
     def generate_blocks(self) -> np.ndarray:
         """Divide the image into blocks of the specified shape and step size.
