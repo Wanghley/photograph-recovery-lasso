@@ -3,8 +3,8 @@ from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RepeatedKFold
 from joblib import Parallel, delayed  # For parallel processing
-from Blockfy import BlockifyImage
-from BasisGenerator import BasisGenerator
+from Blockfy import BlockifyImage # For generating image blocks and corrupted blocks
+from BasisGenerator import BasisGenerator # For generating the basis matrix
 
 
 class LassoAlphaOptimizer:
