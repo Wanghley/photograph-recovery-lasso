@@ -7,7 +7,7 @@ from skimage.util import view_as_windows
 from typing import Tuple, Optional, Union
 
 
-class BlockifyImage:
+class Blockfy:
     """A class for processing images by dividing them into blocks and corrupting pixels.
 
     This class provides functionality to:
@@ -53,11 +53,22 @@ class BlockifyImage:
         """Get the generated image blocks.
 
         Returns:
-            numpy.ndarray: Array of image blocks.
+            numpy.ndarray: Array of image blocks, reshaped to flatten the spatial dimensions.
         """
         if self.img_blocks is None:
             raise ValueError("Blocks have not been generated yet. Call `generate_blocks()` first.")
-        return self.img_blocks
+        
+        # Reshape blocks from (X, Y, block_height, block_width) to (X*Y, block_height, block_width)
+        num_blocks_y, num_blocks_x = self.img_blocks.shape[:2]
+        return self.img_blocks.reshape(num_blocks_y * num_blocks_x, self.block_shape[0], self.block_shape[1])
+    
+    def get_blocks_positioning(self) -> np.ndarray:
+        """Get the positioning of the generated image blocks.
+
+        Returns:
+            numpy.ndarray: Shape of the image blocks array (num_blocks_y, num_blocks_x).
+        """
+        return self.img_blocks.shape[:2]
 
     def generate_corrupted_blocks(self, sensed_pixels: int) -> np.ndarray:
         """Generate corrupted versions of the image blocks by randomly setting pixels to NaN.
