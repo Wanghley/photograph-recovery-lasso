@@ -6,7 +6,7 @@ from sklearn.linear_model import Lasso
 from tqdm import tqdm
 
 # Add path to src to sys
-sys.path.append(os.path.join(os.getcwd(), 'src'))
+sys.path.append(os.path.join(os.getcwd(), '../src'))
 
 from blockfy import Blockfy
 from basisgen import BasisGenerator
