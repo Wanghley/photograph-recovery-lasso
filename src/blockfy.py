@@ -41,7 +41,8 @@ class Blockfy:
             raise TypeError("img_source must be either a string path or a numpy array")
             
         self.block_shape = block_shape
-        self.height, self.width = self.img.shape
+        print(self.img.shape)
+        self.height, self.width = self.img.shape[:2]
         self.block_step = block_step
         self.img_blocks: Optional[np.ndarray] = None
         self.corrupted_blocks: Optional[np.ndarray] = None
