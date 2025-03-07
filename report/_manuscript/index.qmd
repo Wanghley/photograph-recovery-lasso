@@ -295,7 +295,7 @@ Where:
 - $x,y,u,v \in \{1,2,...,K\}$
 
 <div style="text-align: center;">
-![Figure 5: Sample basis chips](assets/sample_basis%20chip.png){width="50%"}
+![Figure 5: Sample basis chips](assets/sample_basis%20chip.png){width=80%}
 
 **Figure 4:** Sample DCT basis chips for $K=8$ blocks.<br>
 *Source: Author, 2025*
