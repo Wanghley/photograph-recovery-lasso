@@ -28,6 +28,12 @@ format:
     mathjax: true
 ---
 
+**Availability**: The code for this project is available on [GitHub](https://github.com/wanghley/photograph-recovery-lasso).
+
+**This paper is a project for the course "ECE580: Machine Learning for Engineering Applications" at Duke University.**
+
+originally available at [wanghley.com](https://wanghley.github.io/photograph-recovery-lasso/)
+
 ## Introduction
 
 ### The Challenge of Image Corruption
