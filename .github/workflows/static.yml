@@ -1,0 +1,66 @@
+# Workflow for deploying Quarto report to GitHub Pages
+name: Deploy Quarto Report to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build and deploy the Quarto report
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      
+      - name: Create docs directory for GitHub Pages
+        run: |
+          # Create docs directory
+          mkdir -p docs
+          
+          # Check if _manuscript directory exists
+          if [ -d "report/_manuscript" ]; then
+            # Copy manuscript files to docs for deployment
+            cp -r report/_manuscript/* docs/
+          else
+            # If _manuscript doesn't exist, create a simple index file
+            echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=../report/_manuscript/index.html'></head><body>Redirecting...</body></html>" > docs/index.html
+            # Also copy the entire report directory to ensure files are available
+            cp -r report docs/
+          fi
+          
+          # Make sure assets are available
+          if [ -d "assets" ]; then
+            mkdir -p docs/assets
+            cp -r assets/* docs/assets/
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
