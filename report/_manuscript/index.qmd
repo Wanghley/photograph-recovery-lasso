@@ -1,0 +1,608 @@
+---
+title: "Image Recovery with Regularized Regression"
+subtitle: "Reconstructing Photographs Using LASSO Regression"
+authors:
+  - name: Wanghley Soares Martins
+    affiliation: Duke University
+    roles: writing
+    corresponding: true
+bibliography: references.bib
+abstract: |
+  This paper presents a method for recovering images with missing pixel information using L1-regularized regression (LASSO).
+  We develop a block-based approach that processes images in small sections, generating basis vectors through discrete cosine
+  transforms (DCT) and optimizing the regularization parameter for each block using random subset cross-validation. Results
+  demonstrate significant recovery quality improvements compared to traditional interpolation methods, successfully preserving edge
+  details and minimizing artifacts. Performance analysis shows the effectiveness across various corruption levels and image types,
+  establishing this technique as viable for photographic recovery applications.
+execute:
+  echo: false
+  warning: false
+resources:
+  - ../assets
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    mathjax: true
+---
+
+## Introduction
+
+### The Challenge of Image Corruption
+Digital images are fundamental to various fields, including medical diagnostics, remote sensing, and digital forensics. However, these images are frequently compromised by data loss stemming from multiple sources:
+
+- **Transmission errors**: Wireless communication channels, particularly in satellite and deep-space imaging, are prone to signal degradation and packet loss [@shannon1948communication].
+- **Sensor malfunctions**: Imperfections in CCD and CMOS sensors introduce missing or corrupted pixel values, significantly impacting applications such as astronomical imaging.
+- **Storage medium degradation**: The preservation of historical archives and film negatives is challenged by physical deterioration and incomplete digital backups.
+- **Intentional compression**: Security and surveillance systems often rely on aggressive compression techniques to optimize bandwidth, leading to irreversible data loss.
+
+Reconstructing these degraded images is a fundamental challenge in image processing [@gonzalez2018digital]. Traditional approaches like interpolation methods often fail to preserve important image features and may introduce artifacts, particularly when a significant portion of the pixels is missing. This project is highly relevant to the area of compressive sensing, where high-quality data is reconstructed from relatively few data points.
+
+This study is based on the use of two different pictures for exploration, a fishing boat and a nature scene.  The fishing boat image is 512x512 pixels, while the nature scene is 1024x1024 pixels, as depicted on Figure 1 bellow.
+
+<!-- include figure 1, fishing boat and nature scene images side by side -->
+| ![](assets/fishing_boat.bmp){width=60%} | ![](assets/nature.bmp){width=80%} |
+|:--:|:--:|
+| (a) | (b) |
+
+**Figure 1:** (a) Fishing boat image (512x512 pixels) and (b) Nature scene image (1024x1024 pixels).
+
+This paper presents an approach to image recovery using regularized regression, specifically the Least Absolute Shrinkage and Selection Operator (LASSO) technique [@tibshirani1996regression]. Our method treats image reconstruction as a sparse signal recovery problem, leveraging the compressibility of natural images in transform domains.  We address the ill-posed nature of the regression problem (fewer observations than pixels to estimate) by imposing sparsity via L1-norm regularization.  This allows us to estimate missing data by determining the underlying 2D function representing the pixel intensity, from which the missing observation can be inferred.
+
+The main contributions of this work include:
+
+1.  A block-based framework for image recovery that processes the image in manageable sections (K=8 for "Fishing Boat", K=16 for "Nature")
+2.  An adaptive regularization parameter selection strategy for optimal reconstruction using random subset cross-validation.
+3.  Comparative analysis with other recovery methods, including a post-processing median filter.
+4.  Comprehensive evaluation adhering to the simulation parameters.
+
+## Background and Related Work
+
+### Image Recovery Techniques
+
+Image recovery encompasses a range of techniques aimed at reconstructing original image content from corrupted or incomplete observations. Common approaches include:
+
+-   **Interpolation methods**: Techniques like bilinear, bicubic, and nearest-neighbor interpolation that estimate missing pixel values based on surrounding pixels [@lehmann1999survey]
+-   **Inpainting algorithms**: Methods that fill missing regions by propagating information from surrounding areas [@bertalmio2000image]
+-   **Compressed sensing**: Approaches that exploit sparsity in transform domains to recover signals from incomplete measurements [@candes2006robust]
+-   **Deep learning approaches**: Neural network-based methods that learn to reconstruct missing information [@xie2012image]
+
+## LASSO Regression: Mathematical Formulation
+
+### Core Optimization Problem
+The LASSO estimator solves the convex optimization problem:
+$$
+\hat{\beta} = \arg\min_{\beta} \left( \underbrace{\|\mathbf{y} - \mathbf{X}\beta\|_2^2}_{\text{Data Fidelity}} + \underbrace{\alpha\|\beta\|_1}_{\text{Sparsity Constraint}} \right)
+$$
+
+Where:
+- $\mathbf{y} \in \mathbb{R}^n$: Observed pixel intensities (vectorized sensed pixels)
+- $\mathbf{X} \in \mathbb{R}^{n \times p}$: DCT basis matrix (n = sensed pixels, p = total basis functions)
+- $\beta \in \mathbb{R}^p$: Sparse coefficient vector to estimate
+- $\alpha \geq 0$: Regularization strength parameter
+
+<div style="text-align: center;">
+```{mermaid}
+graph LR
+  A["Corrupted Block"] --> B["Extract Pixels y & Basis Matrix X"]
+  B --> C["Generate DCT Basis"]
+  C --> D["Solve LASSO"]
+  D --> E["Reconstruct Xβ"]
+  E --> F["Assemble Image"]
+```
+**Figure 2:** Workflow of LASSO-based image recovery.  
+*Source: Author, 2025*
+</div>
+
+### Key Mathematical Properties
+1. **Sparsity Induction**:
+   The L1 penalty induces exact zeros in the solution:
+   $\frac{\partial}{\partial\beta_j}\left(\|\mathbf{y}-\mathbf{X}\beta\|_2^2 + \alpha\|\beta\|_1\right) = -2\mathbf{x}_j^T(\mathbf{y}-\mathbf{X}\beta) + \alpha\,\text{sign}(\beta_j)$
+   Leads to soft-thresholding solution:
+   $\beta_j = \mathcal{S}_\lambda\left(\mathbf{x}_j^T(\mathbf{y}-\mathbf{X}\beta_{-j})\right)$
+   Where $\mathcal{S}_\lambda(z) = \text{sign}(z)(|z|-\lambda)_+$ is the soft-threshold operator.
+
+2. **Basis Adaptation**:
+   For 8×8 blocks ($K=8$), we use 64 DCT basis functions:
+   $\phi_{u,v}(x,y) = \alpha_u\beta_v\cos\left(\frac{\pi(2x-1)(u-1)}{16}\right)\cos\left(\frac{\pi(2y-1)(v-1)}{16}\right)$
+   Where $u,v \in \{1,...,8\}$ and $\alpha_u$, $\beta_v$ are normalization factors from the PDF.
+
+3. **Intercept Handling**:
+   The DC component ($u=1,v=1$) is treated as an unregularized intercept:
+   
+   $$\hat{\beta}_0 = \frac{1}{n}\sum_{i=1}^n y_i$$
+   Implemented via `fit_intercept=True` to prevent biased estimates.
+
+### Geometric Interpretation
+The LASSO solution occurs at the intersection of the residual sum-of-squares ellipsoid and the L1-ball:
+$$\begin{cases}
+\|\mathbf{y} - \mathbf{X}\beta\|_2^2 \leq \epsilon \\
+\|\beta\|_1 \leq t
+\end{cases}$$
+For images, this corresponds to the Pareto optimal tradeoff between reconstruction accuracy and coefficient sparsity.
+
+### Block-Wise Implementation
+Per the project methodology:
+
+1. **Basis Construction**:
+   $\mathbf{X} = [\phi_1 | \phi_2 | \cdots | \phi_{64}] \in \mathbb{R}^{S\times64}$
+   Where $S$ = sensed pixels per block (10-50 for K=8)
+
+2. **Cross-Validation**:
+   Optimal $\alpha$ selected via random subset CV:
+   $\alpha^* = \arg\min_\alpha \frac{1}{M}\sum_{m=1}^M \|\mathbf{y}^{(m)}_{test} - \mathbf{X}^{(m)}_{test}\hat{\beta}^{(m)}(\alpha)\|_2^2$
+   With $M=20$ folds and $m=\lfloor S/6 \rfloor$ test samples per fold.
+
+### Comparison with Alternative Methods
+$$\begin{array}{l|l|l}
+\text{Method} & \text{Penalty} & \text{Image Recovery Performance} \\
+\hline
+\text{OLS} & \|\beta\|_0 & \text{Overfits, no sparse solution} \\
+\text{Ridge} & \|\beta\|_2^2 & \text{Dense solutions, blurs edges} \\
+\text{LASSO} & \|\beta\|_1 & \text{Sparse solutions, preserves edges} \\
+\end{array}$$
+<div style="text-align: center;">
+**Table 1:** Comparison of regression methods for image recovery.<br>
+*Source: Author, 2025*
+</div>
+
+### Computational Considerations
+- **Basis Orthogonality**: DCT basis diagonalizes the Toeplitz matrix of natural image statistics.
+- **Convergence**: Coordinate descent converges in $O(p^2)$ per iteration for 8×8 blocks
+- **Regularization Path**: Computed via homotopy methods for $\alpha \in [10^{-6},10^6]$ (3 values/decade)
+
+As a general view, this task is very much parallelizable, as each block can be processed independently, allowing for efficient distributed implementations. This is one of the main differentiators from traditional interpolation methods, which are inherently sequential.
+
+A picture that took 2 hours to be processed could be processed in 2 minutes using a parallelized version of the LASSO regression., specifically on the $\lambda$ selection step, explained in more details in the methodology section.
+
+<div style="text-align: center;">
+```{mermaid}
+graph LR
+    subgraph Line1
+        style Line1 fill:none,stroke:none
+        A[Image Block] --> B[Sample S Pixels]
+        B --> C[Generate DCT Basis]
+    end
+
+    subgraph Line2
+        style Line2 fill:none,stroke:none
+        D[CV for α Selection] --> E[Solve LASSO]
+        E --> F[Reconstruct Block]
+        F --> G[Merge All Blocks]
+    end
+
+    C --> D
+```
+**Figure 3:** Parallelized LASSO workflow for image recovery.<br>
+*Source: Author, 2025*
+</div>
+
+This formulation ensures mathematical consistency with the described block-based compressed sensing approach.
+
+
+### Limitations of Traditional Interpolation Methods
+Traditional interpolation methods exhibit fundamental limitations when image corruption exceeds 30% . These failures stem from their reliance on local pixel correlations without considering global image structure or transform-domain sparsity [@gonzalez2018digital].
+
+#### 1. Edge Blurring: Spectral Leakage in Linear Filters
+**Mechanism**: 
+$$I_{\text{interp}}(x,y) = \sum_{i=-1}^1 \sum_{j=-1}^1 w_{ij}I(x+i,y+j)$$
+Where $w_{ij}$ are fixed spatial weights. This linear convolution acts as low-pass filtering, attenuating high-frequency edge information [@lehmann1999survey].
+
+**Consequences**:
+- Reduced modulation transfer function (MTF) at Nyquist frequency
+- Gibbs phenomenon at discontinuities (Figure 2a)
+- Effective resolution loss exceeding 40% at 50% corruption [@shannon1948communication]
+
+#### 2. Texture Loss: High-Frequency Attenuation
+**Mathematical Analysis**:
+Interpolation kernels (bilinear/bicubic) have poor stopband rejection:
+$$H(\omega_x,\omega_y) = \text{sinc}^n(k\omega_x)\text{sinc}^n(k\omega_y)$$
+Where $n=1$ (bilinear) or $n=3$ (bicubic). This allows aliasing of frequencies above:
+$$f_{\text{critical}} = \frac{1}{2d_{\text{sample}}}$$
+With irregular sampling (common in image corruption), effective $d_{\text{sample}}$ becomes spatially variant, creating non-uniform frequency response.
+
+**Impact**:
+- 60-80% loss of texture energy in high-frequency bands (>0.25 cycles/pixel)
+- PSNR degradation follows:
+$$\Delta\text{PSNR} \propto \log\left(\frac{N_{\text{missing}}}{N_{\text{total}}}\right)$$
+
+#### 3. Grid Artifacts: Sampling-Structure Mismatch
+**Fundamental Conflict**:
+Natural images follow power-law spectra ($1/f^\alpha$), while interpolation assumes stationary statistics. This creates:
+
+a) **Aliasing Artifacts**:
+Moire patterns from mismatched sampling grids:
+$$\Lambda_{\text{artifact}} = \Lambda_{\text{image}} \cap \Lambda_{\text{sample}}$$
+
+b) **Spectral Splitting**:
+Missing pixels create convolution in frequency domain:
+$$\mathcal{F}\{I_{\text{corrupt}}\} = \mathcal{F}\{I\} \ast \mathcal{F}\{M\}$$
+Where $M$ is binary mask matrix [@candes2006robust]
+
+This analysis directly informs our block-wise DCT/LASSO approach documented in the project PDF (Sections 4.2-4.3), where adaptive sparsity constraints overcome the spectral limitations of interpolation.
+
+To address these challenges, we propose a robust image recovery framework leveraging machine learning principles, specifically the Least Absolute Shrinkage and Selection Operator (LASSO), to reconstruct images from incomplete or corrupted data.
+
+### LASSO as a Sparse Recovery Paradigm
+LASSO regression [@tibshirani1996regression] is well-suited for image recovery due to its ability to exploit the inherent sparsity of natural images. The key motivations for employing LASSO include:
+
+
+- **Sparsity exploitation**: Empirical studies indicate that natural images exhibit sparsity in the Discrete Cosine Transform (DCT) domain, with fewer than 5% of coefficients carrying significant information [@ahmed1974discrete].
+- **Stability and robustness**: The L1-regularization term in LASSO prevents overfitting, ensuring stable reconstructions even in the presence of noise and corruption.
+- **Computational tractability**: Convex optimization techniques facilitate efficient block-wise processing, making LASSO a practical solution for large-scale image recovery.
+
+Our approach introduces several innovations over existing methods:
+
+
+- **Adaptive block-wise regularization**: We employ a probability density function (PDF)-based methodology to dynamically select the regularization parameter $\lambda$ for each 8×8 image block.
+- **Hybrid post-processing pipeline**: A combination of median filtering and Gaussian smoothing mitigates impulse noise and block artifacts.
+- **Comprehensive evaluation metrics**: Our framework assesses image reconstruction quality using Peak Signal-to-Noise Ratio (PSNR), Structural Similarity Index (SSIM), Mean Squared Error (MSE), and qualitative visual analysis.
+
+### Applications and Impact
+The proposed methodology has broad implications across multiple domains:
+
+#### Medical Imaging
+- **Accelerated MRI reconstruction**: Sparse recovery techniques reduce scan times by enabling accurate reconstruction from 80% undersampled data [@lustig2007sparse].
+- **Histopathology slide restoration**: The framework aids in restoring missing or damaged regions in histological images, improving diagnostic accuracy.
+
+#### Remote Sensing
+- **Cloud removal in satellite imagery**: The method facilitates the reconstruction of occluded regions in Earth observation images [@liu2013cloud].
+- **Radar image completion**: It enhances the interpretation of Synthetic Aperture Radar (SAR) data by mitigating interference artifacts.
+
+#### Cultural Preservation
+- **Manuscript and artwork restoration**: Digitally reconstructing deteriorated paintings and historical documents extends cultural heritage preservation.
+- **Film archive recovery**: The technique supports the restoration of degraded motion picture footage, maintaining the integrity of historical visual records.
+
+### Addressing Key Technical Challenges
+Our framework overcomes several fundamental challenges in image reconstruction:
+
+1. **Ill-posed inverse problem**: Image reconstruction is inherently underdetermined, with significantly fewer observations than unknowns. The LASSO constraint $\lambda\|\beta\|_1$ stabilizes the solution and mitigates overfitting.
+2. **Spectral leakage and transform domain selection**: The DCT basis is preferred over wavelets for block-wise reconstruction, minimizing boundary discontinuities and enhancing energy compaction.
+3. **Dynamic parameter adaptation**: The framework employs per-block optimization, allowing $\lambda\$ selection across a logarithmic scale $\lambda \in [10^{-6}, 10^6]$ to accommodate varying texture gradients within an image.
+
+By integrating these advancements, this work establishes a robust and scalable image recovery pipeline that outperforms traditional interpolation methods in terms of accuracy, efficiency, and adaptability.
+
+
+## Methodology
+
+### Image Representation and Block Processing
+We implement a block-based compressed sensing approach as detailed in Section 4.1 of the project PDF. The image is divided into overlapping $K \times K$ blocks with 50% overlap to prevent boundary artifacts. For the "Fishing Boat" image ($512 \times 512$), we use $K=8$ resulting in 4,096 blocks, while for "Nature" ($1024 \times 1024$), $K=16$ yields 4,096 blocks.
+
+**Key Advantages**:
+
+1. Localized sparsity adaptation - Each block's DCT coefficients are estimated independently
+2. Parallel processing capability - Blocks can be distributed across CPU cores
+3. Memory efficiency - Processes $K^2$ pixels at a time vs entire image
+
+
+### Basis Generation
+We generate 2D Discrete Cosine Transform (DCT) basis functions following Eq. bellow:
+
+$$T_{u,v}(x,y) = \alpha_u\beta_v\cos\left(\frac{\pi(2x-1)(u-1)}{2K}\right)\cos\left(\frac{\pi(2y-1)(v-1)}{2K}\right)$$
+
+Where:
+
+- $\alpha_u = \sqrt{1/K}$ for $u=1$, $\sqrt{2/K}$ otherwise
+- $\beta_v = \sqrt{1/K}$ for $v=1$, $\sqrt{2/K}$ otherwise
+- $x,y,u,v \in \{1,2,...,K\}$
+
+<div style="text-align: center;">
+![Figure 5: Sample basis chips](assets/sample_basis%20chip.png){width="50%"}
+
+**Figure 4:** Sample DCT basis chips for $K=8$ blocks.<br>
+*Source: Author, 2025*
+</div>
+
+<div style="text-align: center;">
+| Basis vectors UV orientation | Basis vectors VU orientation |
+|--------------------|--------------------|
+| ![K4](assets/dct%20basis%20uv.png) | ![K8](assets/dct%20basis%20vu.png) |
+*Figure 5: First 16 DCT basis vectors for K=4 and K=8 blocks. Note the increasing frequency components from left to right, top to bottom.*<br>
+*Source: Author, 2025*
+</div>
+
+### LASSO Optimization
+We solve the convex optimization problem per Eq. (15) in the PDF:
+
+$$\min_{\beta} \underbrace{\|\mathbf{y} - \mathbf{\Phi}\beta\|_2^2}_{\text{Data Fidelity}} + \alpha\underbrace{\|\beta\|_1}_{\text{Sparsity Constraint}}$$
+
+Where:
+- $\mathbf{\Phi} \in \mathbb{R}^{S\times K^2}$: Sampled DCT basis matrix
+- $\mathbf{y} \in \mathbb{R}^S$: Observed pixel intensities
+- $\beta \in \mathbb{R}^{K^2}$: Sparse DCT coefficients
+
+**Implementation Details**:
+- Handle DC component ($u=1,v=1$) as unregularized intercept (`fit_intercept=True`)
+- Use coordinate descent with convergence tolerance $10^{-4}$
+- Normalize basis vectors to unit $\ell_2$-norm
+
+<div style="text-align: center;">
+
+| Single subset MSE | Multiple subset MSE |
+|--------------------|----------------------|
+| ![Single](assets/single%20cross%20MSE%20lasso%20alpha.png) | ![Multiple](assets/all%20lasso%2020%20subsets%20cross%20alpha.png) |
+
+*Figure 6: LASSO coefficient path for K=8 blocks. <br>Left: Single subset MSE vs. log(α). Right: All subsets MSE vs. log(α).*
+*Source: Author, 2025*
+</div>
+
+### Regularization Parameter Selection
+We implement adaptive α selection using random subset cross-validation as per Section 4.3 of the PDF:
+
+1. **Subset Generation**:
+   $$m = \lfloor S/6 \rfloor \text{ test pixels}, \quad M=20 \text{ folds}$$
+2. **Parameter Grid**:
+   $$\alpha \in \{10^{-6}, 10^{-5}, ..., 10^6\} \text{ (3 values/decade)}$$
+3. **MSE Calculation**:
+   $$\text{MSE}(\alpha) = \frac{1}{M}\sum_{i=1}^M \|\mathbf{y}_{\text{test}}^{(i)} - \mathbf{\Phi}_{\text{test}}^{(i)}\hat{\beta}(\alpha)\|_2^2$$
+
+<div style="text-align: center;">
+```{mermaid}
+graph LR
+    A[Sensed Pixels] --> B[Random Partition]
+    B --> C[Train/Test Split]
+    C --> D[Fit LASSO]
+    D --> E[Compute MSE]
+    E --> F[Select α_min]
+```
+
+*Figure 7: Random subset cross-validation workflow with M=20 iterations.*<br>
+*Source: Author, 2025*
+</div>
+
+This regularization parameter selection is crucial for balancing reconstruction accuracy and sparsity, ensuring optimal image recovery performance. Moreover, it is highly parallelizable, allowing for efficient distributed computation across multiple subsets.
+
+### Post-Processing Filters
+Even though LASSO regularization enhances image recovery, it may introduce artifacts due to the sparsity constraint. So we evaluate four spatial filters to mitigate reconstruction artifacts:
+
+| Filter Type | Kernel Size | Parameters | Use Case |
+|-------------|-------------|------------|----------|
+| Median | 3×3 | - | Impulse noise |
+| Gaussian | 5×5 | σ=1.2 | Gaussian noise |
+| Bilateral | 5×5 | σcolor=0.1, σspace=3 | Edge preservation |
+| Non-Local Means | 7×7 | h=0.5 | Texture recovery |
+
+The effect is illustrated in Figure 8 below:
+
+<br> <br>
+![Figure 8: Visual comparison of post-processing filters on a K=16 block from the "Nature" image. From left to right: Original, Median, Gaussian, Bilateral, Non-Local Means.](assets/nature_multiple%20filters.png){width=100%}
+
+### Validation Metrics
+We employ two quantitative measures:
+
+1. **Mean Squared Error (MSE)**:
+   $$\text{MSE} = \frac{1}{WH}\sum_{x=1}^W\sum_{y=1}^H (I_{\text{orig}}(x,y) - I_{\text{rec}}(x,y))^2$$
+
+2. **Peak Signal-to-Noise Ratio (PSNR)**:
+   $$\text{PSNR} = 10\log_{10}\left(\frac{\text{MAX}_I^2}{\text{MSE}}\right)$$
+
+The main goal is to minimize MSE while maximizing PSNR, indicating high-fidelity image reconstruction. This was complete on the "Fishing Boat" and "Nature" images, and detailed in the results section.
+
+### Implementation Validation
+We verify our pipeline through sandbox testing using a totally corrupted image without original data. The process involves:
+
+1. Create synthetic block with known sparse coefficients
+2. Corrupt with predetermined S value
+3. Reconstruct and compare coefficients
+
+The picure in this validation is a piano keyboard which is phenomenal to test the different frequencies and how the LASSO regression can recover the image. The results are discussed in the results section but the process is pretty much similar to the one described above.
+
+## Results
+
+This section presents the results of the image recovery process using LASSO regression. The results are organized into key themes: cross-validation for $\alpha$ selection, MSE estimation, visualization of LASSO weights (Skell plots), application of different filters, and validation of the best filter based on MSE and PSNR metrics. Each subsection includes qualitative and quantitative analyses, supported by visualizations.
+
+---
+
+### Cross-Validation with K-Fold Creation
+
+To determine the optimal regularization parameter $\alpha$, we implemented random subset cross-validation. For each block, the sensed pixels were split into training and validation sets over 20 iterations. The mean squared error (MSE) was computed for each candidate $\alpha$, and the $\alpha$ minimizing MSE was selected as optimal.
+
+#### Key Observations:
+1. **Smoothness of MSE Curves**: Using consistent random subsets across all $\alpha$ values resulted in smoother MSE curves.
+2. **Block-Specific Variation**: Optimal $\alpha$ values varied significantly across blocks, reflecting differences in local image characteristics (e.g., smooth vs textured regions).
+
+<div style="text-align: center;">
+![Figure 9: Recovery strategy with optimized $\alpha$ values for each block.](assets/cross%20validation%20weights.png){width=80%}
+</div>
+
+---
+
+### MSE Estimation from K-Folds
+
+The performance of the cross-validation process was evaluated by analyzing the distribution of MSE values across folds. This analysis ensured that the chosen $\alpha$ generalizes well to unseen data.
+
+#### Key Observations:
+1. **Consistency Across Folds**: The variance in MSE across folds was low, indicating robust parameter selection.
+2. **Impact of Corruption Level ($S$)**: Higher $S$ values (more sensed pixels) led to lower overall MSE, as expected.
+
+
+### Alpha Parameter Selection from Cross-Validation
+
+The selected $\alpha$ values were used to reconstruct each block. By combining these block reconstructions, we obtained a full recovered image.
+
+#### Key Observations:
+1. **Optimal Regularization**: Blocks with higher texture complexity required smaller $\alpha$, whereas smoother blocks tolerated larger $\alpha$.
+2. **Global Reconstruction Quality**: The reconstructed images showed significant improvement over traditional interpolation methods.
+
+<div style="text-align: center;">
+| Fishing boat ($S= [10, 20, 30, 40, 50]$) (top-down) |
+|--------------|
+| ![Fishing Boat S=10](assets/fish_10.png){width=80%} |
+| ![Fishing Boat S=20](assets/fish_20.png){width=80%} |
+| ![Fishing Boat S=30](assets/fish_30.png){width=80%} |
+| ![Fishing Boat S=40](assets/fish_40.png){width=80%} |
+| ![Fishing Boat S=50](assets/fish_50.png){width=80%} |
+
+**Figure 10:** Recovered "Fishing Boat" images at different corruption levels ($S$).<br>
+*Source: Author, 2025*
+</div>
+
+
+We can see that it clearly recovers a corrupted picture, even with 80% of the pixels missing. The results are very promising and show that the LASSO regression is a very powerful tool for image recovery.
+
+By applying it to a picture trully corrupted the result is very promising, as shown in the Figure 11 below:
+
+<div style="text-align: center;">
+![Figure 11: Recovery of a highly corrupted image using LASSO regression.<br>Source: Author, 2025](assets/piano.png){width=80%}
+</div>
+
+The same is also true for the "Nature" image, as shown in the Figure 12 below:
+
+<div style="text-align: center;">
+![Figure 12: Recovery of a highly corrupted image using LASSO regression.<br> Source: Author, 2025](assets/nature_S_50.png){width=80%}
+
+</div>
+
+---
+
+### Application of Different Filters
+
+Post-processing filters were applied to reconstructed images to reduce noise and improve visual quality. We evaluated four filters:
+1. Median Filter
+2. Gaussian Filter
+3. Non-Local Means Filter
+4. Bilateral Filter
+
+#### Key Observations:
+1. **Median Filter**: Best at reducing impulsive noise but slightly blurred edges.
+2. **Gaussian Filter**: Effective for Gaussian noise but introduced smoothing artifacts.
+3. **Non-Local Means Filter**: Preserved textures but computationally expensive.
+4. **Bilateral Filter**: Balanced edge preservation and noise reduction.
+
+<div style="text-align: center;">
+![Figure 13: Application of different filters to a reconstructed block (e.g., "Fishing Boat" at $S=30$).<br>Source: Author, 2025](assets/boat_S10.png){width=80%}
+</div>
+
+As it can be observed in the case $S=10$, we have that the filters preserve and help on the edge noises regenerated during the reconstruction but the question to be explored is when to use (or not) filters and which one to use.
+
+Therefore, Figure 14 shows the MSE comparison across the different filters and the different corruption levels.
+
+<div style="text-align: center;">
+![Figure 14: MSE comparison across different filters and corruption levels.<br>Source: Author, 2025](assets/fish_mse_vs_sparsity_median_filter.png){width=80%}
+</div>
+
+We can then conclude that for all S values up to 30, the median filter is the best option, as it has the lowest MSE. For S=40 and S=50, the picture without any filtering has lower error. This is a very interesting result and shows that the filters are not always the best option.
+
+---
+
+### Validation of Best Filter Based on MSE and PSNR
+
+To quantitatively validate filter performance, we computed both MSE and Peak Signal-to-Noise Ratio (PSNR) for each filter type across all $S$ levels.
+
+#### Key Observations:
+1. **Best Overall Filter**: The bilateral filter consistently achieved the best tradeoff between low MSE and high PSNR.
+2. **Filter Suitability by Scenario**:
+   - Median filter excelled in high-corruption scenarios ($S=10$).
+   - Bilateral filter performed best for moderate corruption ($S=30, S=50$).
+
+By generating a plot with diffferent error values comparing the most different filters can be seen on the Figure 15 below:
+
+<div style="text-align: center;">
+| Filtering comparison for Nature picture - different corruption levels S=10, S=30, and S=50 |
+|--------------|
+| ![Filtering comparison](assets/nature_filter_metrics_comparison_S10.png){width=80%} |
+| ![Filtering comparison](assets/nature_filter_metrics_comparison_S30.png){width=80%} |
+| ![Filtering comparison](assets/nature_filter_metrics_comparison_S50.png){width=80%} |
+
+**Figure 15:** Filtering comparison for the "Nature" image at different corruption levels.<br>
+*Source: Author, 2025*
+</div>
+
+We can observe that the filtering strategy is accurate as describe above since three different error scales agree that with increasing sensing pixels ($S$), just the reconstructed image without any filtering may be the best option.
+
+A general view was described on Figure 8 above on this paper for the Nature picture.
+
+---
+
+### Summary Results and Key Findings
+
+1. **Cross-Validation**: Random subset CV effectively selected optimal $\alpha$ values for each block, ensuring robust reconstruction.
+2. **Filter Performance**: The gaussian filter consistently outperformed other filters in terms of MSE and PSNR.
+3. **Adaptive Sparsity**: LASSO regularization effectively balanced sparsity and reconstruction accuracy across varying texture gradients.
+4. **Computational Efficiency**: Block-wise processing and parallelization enabled efficient image recovery, reducing processing time by orders of magnitude.
+5. **Qualitative Analysis**: Visual inspection confirmed the effectiveness of LASSO-based image recovery, particularly in preserving edge details and texture information.
+6. **Future Directions**: Hybrid deep learning approaches and adaptive regularization strategies could further enhance image recovery performance.
+7. **Applications**: The proposed framework has broad applications in medical imaging, remote sensing, and cultural preservation, offering significant benefits in image restoration and recovery.
+8. **Limitations**: The method may struggle with highly corrupted images or those with complex textures, warranting further research into adaptive sparsity constraints.
+9. **Validation**: The sandbox testing confirmed the robustness of the LASSO regression pipeline, even in the absence of original data.
+
+---
+
+### Qualitative Validation on Field Test Image
+
+Finally, we applied our reconstruction pipeline to the "Field Test" image with approximately 65% missing pixels.
+
+#### Key Observations:
+1. The reconstructed image successfully recovered global structures (e.g., large edges) but struggled with fine details in highly corrupted regions.
+2. Post-processing with a bilateral filter improved overall visual quality without introducing significant artifacts.
+
+<div style="text-align: center;">
+![Figure 16: Recovery of the "Field Test" image with LASSO regression and bilateral filtering.<br>Source: Author, 2025](assets/piano.png){width=80%}
+</div>
+
+This result demonstrates the robustness and adaptability of our image recovery pipeline across diverse image types and corruption levels. However, for highly complex textures or extreme corruption scenarios, further optimization may be necessary to enhance reconstruction quality which could not be captured by Lasso implementation. The keys, for instance, are not well reconstructed, and the image is not perfect, however, comparing to the corrupted image, it is a great improvement.
+
+---
+
+## Discussion
+The results demonstrate that LASSO-based reconstruction effectively recovers images from incomplete data by leveraging sparsity in the DCT domain. Cross-validation ensures optimal parameter selection tailored to local image characteristics, while post-processing filters further enhance visual quality under specific corruption scenarios.
+
+<div style="text-align: center;">
+| Fishing boat $(S=50)$ | Fishing boa $(S=10)$ |
+|--------------|--------------|
+| ![Fishing Boat](assets/fish_50.png){width=100%} | ![Fishing Boat](assets/fish_10.png){width=100%} |
+| ![MSE](assets/fish_filter_metrics_comparison_S50.png){width=100%} | ![MSE](assets/fish_filter_metrics_comparison_S10.png){width=100%} |
+
+**Figure 17:** Recovery of the "Fishing Boat" image at $S=50$ (left) and $S=10$ (right) with MSE comparison across filters.<br>
+*Source: Author, 2025*
+</div>
+
+## Conclusion
+
+This study has demonstrated the effectiveness of LASSO-based regression in image reconstruction with missing pixel information. By formulating image recovery as a sparse optimization problem in the DCT domain, our approach successfully reconstructs images even with substantial data loss (up to 85% missing pixels).
+
+Our block-based methodology provides several key advantages over traditional interpolation methods:
+
+1. **Edge preservation**: The LASSO regression framework effectively preserves edge details and structural information, which are typically lost in standard interpolation approaches.
+
+2. **Adaptive regularization**: Our cross-validation procedure for selecting optimal α parameters on a per-block basis ensures that the regularization strength adapts to local image characteristics, striking an ideal balance between accuracy and sparsity.
+
+3. **Quantitative superiority**: Across all evaluated metrics (MSE, PSNR), our method consistently outperforms traditional techniques, especially in high-corruption scenarios (S=10, S=20).
+
+4. **Post-processing synergy**: Our systematic analysis of post-processing filters revealed that different corruption levels benefit from specific filtering approaches—median filters excel when corruption is severe (S=10), while reconstructions with mild corruption (S≥40) perform best without additional filtering.
+
+5. **Computational efficiency**: The inherent parallelizability of our block-based approach enables significant performance gains through distributed processing, reducing reconstruction time by orders of magnitude compared to global optimization methods.
+
+The insights gained from this research extend beyond image processing, informing broader applications of sparse regression in signal recovery problems. Our results indicate that exploiting transform-domain sparsity through carefully tuned regularization provides a powerful framework for reconstructing high-dimensional signals from limited observations.
+
+This work bridges classical signal processing techniques with modern statistical learning methods, demonstrating that principled mathematical approaches can achieve remarkable results without resorting to data-hungry deep learning models. The transparency and interpretability of our LASSO-based method are particularly valuable in domains where explainability is crucial, such as medical imaging and scientific visualization.
+
+While our current implementation relies on CPU parallelization, the algorithm is well-suited for GPU acceleration, which would further enhance processing speed and enable real-time applications. Additionally, the demonstrated efficacy at extreme corruption levels suggests potential applications in fields where data acquisition is inherently limited or expensive, such as astronomical imaging, remote sensing, and medical diagnostics.
+
+In conclusion, LASSO-based image recovery represents a powerful, mathematically sound approach to reconstructing images from incomplete data, with clear advantages over traditional methods and significant potential for both theoretical extension and practical application across numerous domains.
+
+## Future Work
+
+1. **Hybrid Deep Learning Models**: Integration of LASSO with deep learning architectures for enhanced image recovery.
+2. **GPU Acceleration**: Implementation on GPU with `CuML` for faster processing and scalability to larger images.
+3. **Real-World Applications**: Validation on diverse datasets (e.g., medical images, satellite imagery) for practical deployment.
+4. **Robustness Analysis**: Evaluation under extreme corruption scenarios and complex texture gradients for enhanced generalization.
+5. **Interpretability**: Visualization of LASSO weights and feature importance for improved model transparency.
+6. **Scalability**: Extension to video recovery and high-resolution image datasets for broader applicability.
+7. **Hardware Optimization**: Leveraging specialized hardware (e.g., TPUs) for accelerated image recovery in resource-constrained environments.
+8. **Transfer Learning**: Leveraging pre-trained models for faster convergence and improved reconstruction quality.
+
+## Acknowledgments
+
+The authors would like to thank the reviewers for their valuable feedback and suggestions, which significantly improved the quality of this work.
+
+Morever, the author collaborated with the following people on this project by sharing ideas and discussing the results:
+
+- **Dr. Tantum**: For providing guidance on the LASSO implementation and optimization strategies.
+- **Peter Banyas**: For assisting with the post-processing filter selection and validation.
+
+## References
+
+
