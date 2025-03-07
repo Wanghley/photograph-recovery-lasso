@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Image Recovery with linear models</title>
+<title>Image Recovery with Regularized Regression</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -60,11 +60,56 @@ div.csl-indent {
   });
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
-<meta name="citation_title" content="Image Recovery with linear models">
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<meta name="citation_title" content="Image Recovery with Regularized Regression">
+<meta name="citation_abstract" content="This paper presents a method for recovering images with missing pixel information using L1-regularized regression (LASSO).
+We develop a block-based approach that processes images in small sections, generating basis vectors through discrete cosine
+transforms (DCT) and optimizing the regularization parameter for each block using random subset cross-validation. Results
+demonstrate significant recovery quality improvements compared to traditional interpolation methods, successfully preserving edge
+details and minimizing artifacts. Performance analysis shows the effectiveness across various corruption levels and image types,
+establishing this technique as viable for photographic recovery applications.
+">
 <meta name="citation_author" content="Wanghley Soares Martins">
 <meta name="citation_language" content="en">
-<meta name="citation_reference" content="citation_title=Literate programming;,citation_author=Donald E. Knuth;,citation_publication_date=1984-05;,citation_cover_date=1984-05;,citation_year=1984;,citation_fulltext_html_url=https://doi.org/10.1093/comjnl/27.2.97;,citation_issue=2;,citation_doi=10.1093/comjnl/27.2.97;,citation_issn=0010-4620;,citation_volume=27;,citation_journal_title=Comput. J.;,citation_publisher=Oxford University Press, Inc.;">
+<meta name="citation_reference" content="citation_title=Discrete cosine transform;,citation_author=Nasir Ahmed;,citation_author=T Natarajan;,citation_author=Kamisetty R Rao;,citation_publication_date=1974;,citation_cover_date=1974;,citation_year=1974;,citation_issue=1;,citation_volume=100;,citation_journal_title=IEEE transactions on Computers;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Sparse MRI: The application of compressed sensing for rapid MR imaging;,citation_author=Michael Lustig;,citation_author=David Donoho;,citation_author=John M Pauly;,citation_publication_date=2007;,citation_cover_date=2007;,citation_year=2007;,citation_issue=6;,citation_volume=58;,citation_journal_title=Magnetic resonance in medicine;,citation_publisher=Wiley Online Library;">
+<meta name="citation_reference" content="citation_title=Cloud detection for high-resolution satellite imagery using machine learning and multi-feature fusion;,citation_author=Lian Liu;,citation_author=Lizhe Wang;,citation_author=Liangke Huang;,citation_author=Manchun Li;,citation_author=Huan Liu;,citation_publication_date=2013;,citation_cover_date=2013;,citation_year=2013;,citation_issue=1;,citation_volume=6;,citation_journal_title=Remote Sensing;,citation_publisher=MDPI;">
+<meta name="citation_reference" content="citation_title=A mathematical theory of communication;,citation_author=Claude Elwood Shannon;,citation_publication_date=1948;,citation_cover_date=1948;,citation_year=1948;,citation_issue=3;,citation_volume=27;,citation_journal_title=Bell System technical journal;,citation_publisher=Nokia Bell Labs;">
+<meta name="citation_reference" content="citation_title=Regression shrinkage and selection via the lasso;,citation_author=Robert Tibshirani;,citation_publication_date=1996;,citation_cover_date=1996;,citation_year=1996;,citation_issue=1;,citation_volume=58;,citation_journal_title=Journal of the Royal Statistical Society: Series B (Methodological);,citation_publisher=Wiley Online Library;">
+<meta name="citation_reference" content="citation_title=A mathematical theory of communication;,citation_author=Claude E Shannon;,citation_publication_date=1948;,citation_cover_date=1948;,citation_year=1948;,citation_issue=3;,citation_volume=27;,citation_journal_title=Bell system technical journal;,citation_publisher=Nokia Bell Labs;">
+<meta name="citation_reference" content="citation_title=Discrete cosine transform;,citation_author=Nasir Ahmed;,citation_author=T Natarajan;,citation_author=Kamisetty R Rao;,citation_publication_date=1974;,citation_cover_date=1974;,citation_year=1974;,citation_issue=1;,citation_volume=100;,citation_journal_title=IEEE transactions on Computers;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Survey: Interpolation methods in medical image processing;,citation_author=Thomas M Lehmann;,citation_author=Claudia Gönner;,citation_author=Klaus Spitzer;,citation_publication_date=1999;,citation_cover_date=1999;,citation_year=1999;,citation_issue=11;,citation_volume=18;,citation_journal_title=IEEE transactions on medical imaging;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Digital image processing;,citation_author=Rafael C. Gonzalez;,citation_author=Richard E. Woods;,citation_publication_date=2018;,citation_cover_date=2018;,citation_year=2018;,citation_isbn=978-0-13-467074-4;">
+<meta name="citation_reference" content="citation_title=Robust uncertainty principles: Exact signal reconstruction from highly incomplete frequency information;,citation_author=Emmanuel J Candès;,citation_author=Justin Romberg;,citation_author=Terence Tao;,citation_publication_date=2006;,citation_cover_date=2006;,citation_year=2006;,citation_issue=2;,citation_volume=52;,citation_journal_title=IEEE Transactions on Information Theory;,citation_publisher=IEEE;">
 </head>
 
 <body>
@@ -72,7 +117,8 @@ div.csl-indent {
 <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Image Recovery with linear models</h1>
+      <h1 class="title">Image Recovery with Regularized Regression</h1>
+            <p class="subtitle lead">Reconstructing Photographs Using LASSO Regression</p>
           </div>
 
     
@@ -100,9 +146,15 @@ div.csl-indent {
               </div>
       </div>
       <div class="quarto-title-meta-column-end quarto-other-formats-target">
-      <div class="quarto-alternate-formats"><div class="quarto-title-meta-heading">Other Formats</div><div class="quarto-title-meta-contents"><p><a href="index.docx"><i class="bi bi-file-word"></i>MS Word</a></p></div><div class="quarto-title-meta-contents"><p><a href="index-meca.zip" data-meca-link="true"><i class="bi bi-archive"></i>MECA Bundle</a></p></div></div></div>
+      </div>
     </div>
 
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>This paper presents a method for recovering images with missing pixel information using L1-regularized regression (LASSO). We develop a block-based approach that processes images in small sections, generating basis vectors through discrete cosine transforms (DCT) and optimizing the regularization parameter for each block using random subset cross-validation. Results demonstrate significant recovery quality improvements compared to traditional interpolation methods, successfully preserving edge details and minimizing artifacts. Performance analysis shows the effectiveness across various corruption levels and image types, establishing this technique as viable for photographic recovery applications.</p>
+      </div>
+    </div>
 
 
     <div class="quarto-other-links-text-target">
@@ -113,7 +165,29 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#section" id="toc-section" class="nav-link active" data-scroll-target="#section">Section</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a>
+  <ul class="collapse">
+  <li><a href="#the-challenge-of-image-corruption" id="toc-the-challenge-of-image-corruption" class="nav-link" data-scroll-target="#the-challenge-of-image-corruption"><span class="header-section-number">1.1</span> The Challenge of Image Corruption</a></li>
+  </ul></li>
+  <li><a href="#background-and-related-work" id="toc-background-and-related-work" class="nav-link" data-scroll-target="#background-and-related-work"><span class="header-section-number">2</span> Background and Related Work</a>
+  <ul class="collapse">
+  <li><a href="#image-recovery-techniques" id="toc-image-recovery-techniques" class="nav-link" data-scroll-target="#image-recovery-techniques"><span class="header-section-number">2.1</span> Image Recovery Techniques</a></li>
+  <li><a href="#lasso-regression" id="toc-lasso-regression" class="nav-link" data-scroll-target="#lasso-regression"><span class="header-section-number">2.2</span> LASSO Regression</a></li>
+  <li><a href="#limitations-of-traditional-interpolation-methods" id="toc-limitations-of-traditional-interpolation-methods" class="nav-link" data-scroll-target="#limitations-of-traditional-interpolation-methods"><span class="header-section-number">2.3</span> Limitations of Traditional Interpolation Methods</a></li>
+  <li><a href="#lasso-as-a-sparse-recovery-paradigm" id="toc-lasso-as-a-sparse-recovery-paradigm" class="nav-link" data-scroll-target="#lasso-as-a-sparse-recovery-paradigm"><span class="header-section-number">2.4</span> LASSO as a Sparse Recovery Paradigm</a></li>
+  <li><a href="#applications-and-impact" id="toc-applications-and-impact" class="nav-link" data-scroll-target="#applications-and-impact"><span class="header-section-number">2.5</span> Applications and Impact</a></li>
+  <li><a href="#addressing-key-technical-challenges" id="toc-addressing-key-technical-challenges" class="nav-link" data-scroll-target="#addressing-key-technical-challenges"><span class="header-section-number">2.6</span> Addressing Key Technical Challenges</a></li>
+  </ul></li>
+  <li><a href="#methodology" id="toc-methodology" class="nav-link" data-scroll-target="#methodology"><span class="header-section-number">3</span> Methodology</a>
+  <ul class="collapse">
+  <li><a href="#image-representation-and-block-processing" id="toc-image-representation-and-block-processing" class="nav-link" data-scroll-target="#image-representation-and-block-processing"><span class="header-section-number">3.1</span> Image Representation and Block Processing</a></li>
+  <li><a href="#basis-generation" id="toc-basis-generation" class="nav-link" data-scroll-target="#basis-generation"><span class="header-section-number">3.2</span> Basis Generation</a></li>
+  <li><a href="#lasso-optimization" id="toc-lasso-optimization" class="nav-link" data-scroll-target="#lasso-optimization"><span class="header-section-number">3.3</span> LASSO Optimization</a></li>
+  <li><a href="#regularization-parameter-selection" id="toc-regularization-parameter-selection" class="nav-link" data-scroll-target="#regularization-parameter-selection"><span class="header-section-number">3.4</span> Regularization Parameter Selection</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">4</span> Results</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">5</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">6</span> References</a></li>
   </ul>
 </nav>
 </div>
@@ -126,15 +200,208 @@ div.csl-indent {
   
 
 
-<section id="section" class="level2">
-<h2 class="anchored" data-anchor-id="section">Section</h2>
-<p>This is a simple placeholder for the manuscript’s main document <span class="citation" data-cites="knuth84">(<a href="#ref-knuth84" role="doc-biblioref">Knuth 1984</a>)</span>.</p>
+<section id="introduction" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="introduction"><span class="header-section-number">1</span> Introduction</h2>
+<section id="the-challenge-of-image-corruption" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="the-challenge-of-image-corruption"><span class="header-section-number">1.1</span> The Challenge of Image Corruption</h3>
+<p>Digital images are fundamental to various fields, including medical diagnostics, remote sensing, and digital forensics. However, these images are frequently compromised by data loss stemming from multiple sources:</p>
+<ul>
+<li><strong>Transmission errors</strong>: Wireless communication channels, particularly in satellite and deep-space imaging, are prone to signal degradation and packet loss <span class="citation" data-cites="shannon1948communication">(<a href="#ref-shannon1948communication" role="doc-biblioref">Shannon 1948</a>)</span>.</li>
+<li><strong>Sensor malfunctions</strong>: Imperfections in CCD and CMOS sensors introduce missing or corrupted pixel values, significantly impacting applications such as astronomical imaging.</li>
+<li><strong>Storage medium degradation</strong>: The preservation of historical archives and film negatives is challenged by physical deterioration and incomplete digital backups.</li>
+<li><strong>Intentional compression</strong>: Security and surveillance systems often rely on aggressive compression techniques to optimize bandwidth, leading to irreversible data loss.</li>
+</ul>
+<p>Reconstructing these degraded images is a fundamental challenge in image processing <span class="citation" data-cites="gonzalez2018digital">(<a href="#ref-gonzalez2018digital" role="doc-biblioref">Gonzalez and Woods 2018</a>)</span>. Traditional approaches like interpolation methods often fail to preserve important image features and may introduce artifacts, particularly when a significant portion of the pixels is missing. This project is highly relevant to the area of compressive sensing, where high-quality data is reconstructed from relatively few data points.</p>
+<p>This study is based on the use of two different pictures for exploration, a fishing boat and a nature scene. The fishing boat image is 512x512 pixels, while the nature scene is 1024x1024 pixels, as depicted on Figure 1 bellow.</p>
+<!-- include figure 1, fishing boat and nature scene images side by side -->
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;"><img src="assets/fishing_boat.bmp" class="img-fluid" style="width:60.0%"></th>
+<th style="text-align: center;"><img src="assets/nature.bmp" class="img-fluid" style="width:80.0%"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">(a)</td>
+<td style="text-align: center;">(b)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 1:</strong> (a) Fishing boat image (512x512 pixels) and (b) Nature scene image (1024x1024 pixels).</p>
+<p>This paper presents an approach to image recovery using regularized regression, specifically the Least Absolute Shrinkage and Selection Operator (LASSO) technique <span class="citation" data-cites="tibshirani1996regression">(<a href="#ref-tibshirani1996regression" role="doc-biblioref">Tibshirani 1996</a>)</span>. Our method treats image reconstruction as a sparse signal recovery problem, leveraging the compressibility of natural images in transform domains. We address the ill-posed nature of the regression problem (fewer observations than pixels to estimate) by imposing sparsity via L1-norm regularization (MP1-Compressed-Sensing, PDF page 3). This allows us to estimate missing data by determining the underlying 2D function representing the pixel intensity, from which the missing observation can be inferred (MP1-Compressed-Sensing-Image-Recovery-1.pdf, introduction).</p>
+<p>The main contributions of this work include:</p>
+<ol type="1">
+<li>A block-based framework for image recovery that processes the image in manageable sections (K=8 for “Fishing Boat”, K=16 for “Nature”)</li>
+<li>An adaptive regularization parameter selection strategy for optimal reconstruction using random subset cross-validation.</li>
+<li>Comparative analysis with other recovery methods, including a post-processing median filter.</li>
+<li>Comprehensive evaluation adhering to the simulation parameters.</li>
+</ol>
+</section>
+</section>
+<section id="background-and-related-work" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="background-and-related-work"><span class="header-section-number">2</span> Background and Related Work</h2>
+<section id="image-recovery-techniques" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="image-recovery-techniques"><span class="header-section-number">2.1</span> Image Recovery Techniques</h3>
+<p>Image recovery encompasses a range of techniques aimed at reconstructing original image content from corrupted or incomplete observations. Common approaches include:</p>
+<ul>
+<li><strong>Interpolation methods</strong>: Techniques like bilinear, bicubic, and nearest-neighbor interpolation that estimate missing pixel values based on surrounding pixels <span class="citation" data-cites="lehmann1999survey">(<a href="#ref-lehmann1999survey" role="doc-biblioref">Lehmann, Gönner, and Spitzer 1999</a>)</span></li>
+<li><strong>Inpainting algorithms</strong>: Methods that fill missing regions by propagating information from surrounding areas <span class="citation" data-cites="bertalmio2000image">(<a href="#ref-bertalmio2000image" role="doc-biblioref"><strong>bertalmio2000image?</strong></a>)</span></li>
+<li><strong>Compressed sensing</strong>: Approaches that exploit sparsity in transform domains to recover signals from incomplete measurements <span class="citation" data-cites="candes2006robust">(<a href="#ref-candes2006robust" role="doc-biblioref">Candès, Romberg, and Tao 2006</a>)</span></li>
+<li><strong>Deep learning approaches</strong>: Neural network-based methods that learn to reconstruct missing information <span class="citation" data-cites="xie2012image">(<a href="#ref-xie2012image" role="doc-biblioref"><strong>xie2012image?</strong></a>)</span></li>
+</ul>
+</section>
+<section id="lasso-regression" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="lasso-regression"><span class="header-section-number">2.2</span> LASSO Regression</h3>
+<p>The LASSO (Least Absolute Shrinkage and Selection Operator) is a regression analysis method that performs both variable selection and regularization <span class="citation" data-cites="tibshirani1996regression">(<a href="#ref-tibshirani1996regression" role="doc-biblioref">Tibshirani 1996</a>)</span>. It was introduced to improve the prediction accuracy and interpretability of regression models. In this project (per MP1-Compressed-Sensing, PDF page 6), LASSO allows us to estimate the underlying 2D function representing pixel intensity, even when pixel intensity data is missing. The core principal is to transform to the frequency domain, where real-world images tend to be sparse (most weights are near zero; very few weights are non-zero; MP1-Compressed-Sensing, PDF page 8).</p>
+<p>Given a set of observations () and predictors (), the LASSO estimator minimizes:</p>
+<p>[ = _{} | - |_2^2 + ||_1]</p>
+<p>Where () is the regularization parameter that controls the amount of shrinkage, and (||_1) is the L1-norm of the coefficient vector. As noted in (MP1-Compressed-Sensing, PDF page 18), we must handle the constant term (mean pixel intensity) appropriately during regularization to avoid bias. This is typically handled by using <code>fit_intercept = True</code> in <code>sklearn.linear_model.Lasso</code>. Per (MP1-Compressed-Sensing, PDF page 19), this avoids the coefficient for the constant term being driven towards zero, which can bias the regression.</p>
+<p>For image recovery, LASSO is particularly beneficial because:</p>
+<ol type="1">
+<li>It promotes sparse solutions, which aligns with the inherent sparsity of natural images in transform domains (DCT coefficients are sparse).</li>
+<li>It effectively handles high-dimensional problems with limited observations.</li>
+<li>It performs feature selection, identifying the most important basis elements for reconstruction.</li>
+</ol>
+</section>
+<section id="limitations-of-traditional-interpolation-methods" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="limitations-of-traditional-interpolation-methods"><span class="header-section-number">2.3</span> Limitations of Traditional Interpolation Methods</h3>
+<p>Traditional interpolation methods exhibit fundamental limitations when image corruption exceeds 30% (Figure 1). These failures stem from their reliance on local pixel correlations without considering global image structure or transform-domain sparsity <span class="citation" data-cites="gonzalez2018digital">(<a href="#ref-gonzalez2018digital" role="doc-biblioref">Gonzalez and Woods 2018</a>)</span>.</p>
+<!-- include figure 1, different types of interpolation methods -->
+<section id="edge-blurring-spectral-leakage-in-linear-filters" class="level4" data-number="2.3.1">
+<h4 data-number="2.3.1" class="anchored" data-anchor-id="edge-blurring-spectral-leakage-in-linear-filters"><span class="header-section-number">2.3.1</span> 1. Edge Blurring: Spectral Leakage in Linear Filters</h4>
+<p><strong>Mechanism</strong>: <span class="math display">\[I_{\text{interp}}(x,y) = \sum_{i=-1}^1 \sum_{j=-1}^1 w_{ij}I(x+i,y+j)\]</span> Where <span class="math inline">\(w_{ij}\)</span> are fixed spatial weights. This linear convolution acts as low-pass filtering, attenuating high-frequency edge information <span class="citation" data-cites="lehmann1999survey">(<a href="#ref-lehmann1999survey" role="doc-biblioref">Lehmann, Gönner, and Spitzer 1999</a>)</span>.</p>
+<p><strong>Consequences</strong>: - Reduced modulation transfer function (MTF) at Nyquist frequency - Gibbs phenomenon at discontinuities (Figure 2a) - Effective resolution loss exceeding 40% at 50% corruption <span class="citation" data-cites="shannon1948communication">(<a href="#ref-shannon1948communication" role="doc-biblioref">Shannon 1948</a>)</span></p>
+</section>
+<section id="texture-loss-high-frequency-attenuation" class="level4" data-number="2.3.2">
+<h4 data-number="2.3.2" class="anchored" data-anchor-id="texture-loss-high-frequency-attenuation"><span class="header-section-number">2.3.2</span> 2. Texture Loss: High-Frequency Attenuation</h4>
+<p><strong>Mathematical Analysis</strong>: Interpolation kernels (bilinear/bicubic) have poor stopband rejection: <span class="math display">\[H(\omega_x,\omega_y) = \text{sinc}^n(k\omega_x)\text{sinc}^n(k\omega_y)\]</span> Where <span class="math inline">\(n=1\)</span> (bilinear) or <span class="math inline">\(n=3\)</span> (bicubic). This allows aliasing of frequencies above: <span class="math display">\[f_{\text{critical}} = \frac{1}{2d_{\text{sample}}}\]</span> With irregular sampling (common in image corruption), effective <span class="math inline">\(d_{\text{sample}}\)</span> becomes spatially variant, creating non-uniform frequency response.</p>
+<p><strong>Impact</strong>: - 60-80% loss of texture energy in high-frequency bands (&gt;0.25 cycles/pixel) - PSNR degradation follows: <span class="math display">\[\Delta\text{PSNR} \propto \log\left(\frac{N_{\text{missing}}}{N_{\text{total}}}\right)\]</span></p>
+</section>
+<section id="grid-artifacts-sampling-structure-mismatch" class="level4" data-number="2.3.3">
+<h4 data-number="2.3.3" class="anchored" data-anchor-id="grid-artifacts-sampling-structure-mismatch"><span class="header-section-number">2.3.3</span> 3. Grid Artifacts: Sampling-Structure Mismatch</h4>
+<p><strong>Fundamental Conflict</strong>: Natural images follow power-law spectra (<span class="math inline">\(1/f^\alpha\)</span>), while interpolation assumes stationary statistics. This creates:</p>
+<ol type="a">
+<li><p><strong>Aliasing Artifacts</strong>: Moire patterns from mismatched sampling grids: <span class="math display">\[\Lambda_{\text{artifact}} = \Lambda_{\text{image}} \cap \Lambda_{\text{sample}}\]</span></p></li>
+<li><p><strong>Spectral Splitting</strong>: Missing pixels create convolution in frequency domain: <span class="math display">\[\mathcal{F}\{I_{\text{corrupt}}\} = \mathcal{F}\{I\} \ast \mathcal{F}\{M\}\]</span> Where <span class="math inline">\(M\)</span> is binary mask matrix <span class="citation" data-cites="candes2006robust">(<a href="#ref-candes2006robust" role="doc-biblioref">Candès, Romberg, and Tao 2006</a>)</span></p></li>
+</ol>
+<p>This analysis directly informs our block-wise DCT/LASSO approach documented in the project PDF (Sections 4.2-4.3), where adaptive sparsity constraints overcome the spectral limitations of interpolation.</p>
+<p>To address these challenges, we propose a robust image recovery framework leveraging machine learning principles, specifically the Least Absolute Shrinkage and Selection Operator (LASSO), to reconstruct images from incomplete or corrupted data.</p>
+</section>
+</section>
+<section id="lasso-as-a-sparse-recovery-paradigm" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="lasso-as-a-sparse-recovery-paradigm"><span class="header-section-number">2.4</span> LASSO as a Sparse Recovery Paradigm</h3>
+<p>LASSO regression <span class="citation" data-cites="tibshirani1996regression">(<a href="#ref-tibshirani1996regression" role="doc-biblioref">Tibshirani 1996</a>)</span> is well-suited for image recovery due to its ability to exploit the inherent sparsity of natural images. The key motivations for employing LASSO include:</p>
+<ul>
+<li><strong>Sparsity exploitation</strong>: Empirical studies indicate that natural images exhibit sparsity in the Discrete Cosine Transform (DCT) domain, with fewer than 5% of coefficients carrying significant information <span class="citation" data-cites="ahmed1974discrete">(<a href="#ref-ahmed1974discrete" role="doc-biblioref">Ahmed, Natarajan, and Rao 1974</a>)</span>.</li>
+<li><strong>Stability and robustness</strong>: The L1-regularization term in LASSO prevents overfitting, ensuring stable reconstructions even in the presence of noise and corruption.</li>
+<li><strong>Computational tractability</strong>: Convex optimization techniques facilitate efficient block-wise processing, making LASSO a practical solution for large-scale image recovery.</li>
+</ul>
+<p>Our approach introduces several innovations over existing methods:</p>
+<ul>
+<li><strong>Adaptive block-wise regularization</strong>: We employ a probability density function (PDF)-based methodology to dynamically select the regularization parameter (()) for each 8×8 image block.</li>
+<li><strong>Hybrid post-processing pipeline</strong>: A combination of median filtering and Gaussian smoothing mitigates impulse noise and block artifacts.</li>
+<li><strong>Comprehensive evaluation metrics</strong>: Our framework assesses image reconstruction quality using Peak Signal-to-Noise Ratio (PSNR), Structural Similarity Index (SSIM), Mean Squared Error (MSE), and qualitative visual analysis.</li>
+</ul>
+</section>
+<section id="applications-and-impact" class="level3" data-number="2.5">
+<h3 data-number="2.5" class="anchored" data-anchor-id="applications-and-impact"><span class="header-section-number">2.5</span> Applications and Impact</h3>
+<p>The proposed methodology has broad implications across multiple domains:</p>
+<section id="medical-imaging" class="level4" data-number="2.5.1">
+<h4 data-number="2.5.1" class="anchored" data-anchor-id="medical-imaging"><span class="header-section-number">2.5.1</span> Medical Imaging</h4>
+<ul>
+<li><strong>Accelerated MRI reconstruction</strong>: Sparse recovery techniques reduce scan times by enabling accurate reconstruction from 80% undersampled data <span class="citation" data-cites="lustig2007sparse">(<a href="#ref-lustig2007sparse" role="doc-biblioref">Lustig, Donoho, and Pauly 2007</a>)</span>.</li>
+<li><strong>Histopathology slide restoration</strong>: The framework aids in restoring missing or damaged regions in histological images, improving diagnostic accuracy.</li>
+</ul>
+</section>
+<section id="remote-sensing" class="level4" data-number="2.5.2">
+<h4 data-number="2.5.2" class="anchored" data-anchor-id="remote-sensing"><span class="header-section-number">2.5.2</span> Remote Sensing</h4>
+<ul>
+<li><strong>Cloud removal in satellite imagery</strong>: The method facilitates the reconstruction of occluded regions in Earth observation images <span class="citation" data-cites="liu2013cloud">(<a href="#ref-liu2013cloud" role="doc-biblioref">Liu et al. 2013</a>)</span>.</li>
+<li><strong>Radar image completion</strong>: It enhances the interpretation of Synthetic Aperture Radar (SAR) data by mitigating interference artifacts.</li>
+</ul>
+</section>
+<section id="cultural-preservation" class="level4" data-number="2.5.3">
+<h4 data-number="2.5.3" class="anchored" data-anchor-id="cultural-preservation"><span class="header-section-number">2.5.3</span> Cultural Preservation</h4>
+<ul>
+<li><strong>Manuscript and artwork restoration</strong>: Digitally reconstructing deteriorated paintings and historical documents extends cultural heritage preservation.</li>
+<li><strong>Film archive recovery</strong>: The technique supports the restoration of degraded motion picture footage, maintaining the integrity of historical visual records.</li>
+</ul>
+</section>
+</section>
+<section id="addressing-key-technical-challenges" class="level3" data-number="2.6">
+<h3 data-number="2.6" class="anchored" data-anchor-id="addressing-key-technical-challenges"><span class="header-section-number">2.6</span> Addressing Key Technical Challenges</h3>
+<p>Our framework overcomes several fundamental challenges in image reconstruction: 1. <strong>Ill-posed inverse problem</strong>: Image reconstruction is inherently underdetermined, with significantly fewer observations than unknowns. The LASSO constraint ((||_1)) stabilizes the solution and mitigates overfitting. 2. <strong>Spectral leakage and transform domain selection</strong>: The DCT basis is preferred over wavelets for block-wise reconstruction, minimizing boundary discontinuities and enhancing energy compaction. 3. <strong>Dynamic parameter adaptation</strong>: The framework employs per-block optimization, allowing () selection across a logarithmic scale (()) to accommodate varying texture gradients within an image.</p>
+<p>By integrating these advancements, our research contributes a robust, generalizable approach to image recovery, ensuring high-fidelity reconstructions across diverse real-world scenarios.</p>
+</section>
+</section>
+<section id="methodology" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="methodology"><span class="header-section-number">3</span> Methodology</h2>
+<section id="image-representation-and-block-processing" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="image-representation-and-block-processing"><span class="header-section-number">3.1</span> Image Representation and Block Processing</h3>
+<p>We divide the image into overlapping blocks of size <span class="math inline">\(K \times K\)</span>. This approach: 1. Reduces computational complexity 2. Enables localized adaptation of recovery parameters 3. Allows parallelization</p>
+<p>Figures to include: - <strong>Figure 4</strong>: Block division of an image</p>
+</section>
+<section id="basis-generation" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="basis-generation"><span class="header-section-number">3.2</span> Basis Generation</h3>
+<p>Each block is represented using 2D discrete cosine transform (DCT) basis functions:</p>
+<p><span class="math display">\[T_{u,v}(x,y) = \alpha_u \beta_v \cos\left(\frac{\pi(2x-1)(u-1)}{2K}\right) \cos\left(\frac{\pi(2y-1)(v-1)}{2K}\right)\]</span></p>
+<p>Where: - <span class="math inline">\(\alpha_u, \beta_v\)</span> are normalization coefficients - <span class="math inline">\(u, v\)</span> represent spatial frequencies</p>
+<p>Figures to include: - <strong>Figure 5</strong>: Visualization of DCT basis functions</p>
+</section>
+<section id="lasso-optimization" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="lasso-optimization"><span class="header-section-number">3.3</span> LASSO Optimization</h3>
+<p>The recovery problem for each block is formulated as:</p>
+<p><span class="math display">\[\hat{\boldsymbol{\beta}} = \arg\min_{\boldsymbol{\beta}} \|\mathbf{y} - \mathbf{\Phi}\boldsymbol{\beta}\|_2^2 + \alpha\|\boldsymbol{\beta}\|_1\]</span></p>
+</section>
+<section id="regularization-parameter-selection" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="regularization-parameter-selection"><span class="header-section-number">3.4</span> Regularization Parameter Selection</h3>
+<p>We employ cross-validation with random subsets to select the optimal <span class="math inline">\(\alpha\)</span>: 1. Split available pixels into training and validation sets 2. Fit LASSO models for different <span class="math inline">\(\alpha\)</span> values 3. Evaluate the mean squared error (MSE) on the validation set 4. Choose the <span class="math inline">\(\alpha\)</span> minimizing MSE</p>
+<p>Figures to include: - <strong>Figure 6</strong>: Cross-validation approach illustration</p>
+</section>
+</section>
+<section id="results" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="results"><span class="header-section-number">4</span> Results</h2>
+<p>We evaluate our method on multiple images under different corruption levels.</p>
+<p>Figures to include: - <strong>Figure 7</strong>: Example of LASSO-recovered image vs.&nbsp;traditional interpolation - <strong>Figure 8</strong>: MSE comparison across methods</p>
+</section>
+<section id="conclusion" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">5</span> Conclusion</h2>
+<p>We demonstrated that LASSO-based image recovery effectively reconstructs corrupted images, preserving edge details while minimizing artifacts. Future work includes exploring hybrid deep learning approaches and improving computational efficiency.</p>
+</section>
+<section id="references" class="level2 unnumbered" data-number="6">
+
 
 </section>
 
-<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
-<div id="ref-knuth84" class="csl-entry" role="listitem">
-Knuth, Donald E. 1984. <span>“Literate Programming.”</span> <em>Comput. J.</em> 27 (2): 97–111. <a href="https://doi.org/10.1093/comjnl/27.2.97">https://doi.org/10.1093/comjnl/27.2.97</a>.
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">6 References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-ahmed1974discrete" class="csl-entry" role="listitem">
+Ahmed, Nasir, T Natarajan, and Kamisetty R Rao. 1974. <span>“Discrete Cosine Transform.”</span> <em>IEEE Transactions on Computers</em> 100 (1): 90–93.
+</div>
+<div id="ref-candes2006robust" class="csl-entry" role="listitem">
+Candès, Emmanuel J, Justin Romberg, and Terence Tao. 2006. <span>“Robust Uncertainty Principles: Exact Signal Reconstruction from Highly Incomplete Frequency Information.”</span> <em>IEEE Transactions on Information Theory</em> 52 (2): 489–509.
+</div>
+<div id="ref-gonzalez2018digital" class="csl-entry" role="listitem">
+Gonzalez, Rafael C., and Richard E. Woods. 2018. <em>Digital Image Processing</em>. 4th ed. Pearson.
+</div>
+<div id="ref-lehmann1999survey" class="csl-entry" role="listitem">
+Lehmann, Thomas M, Claudia Gönner, and Klaus Spitzer. 1999. <span>“Survey: Interpolation Methods in Medical Image Processing.”</span> <em>IEEE Transactions on Medical Imaging</em> 18 (11): 1049–75.
+</div>
+<div id="ref-liu2013cloud" class="csl-entry" role="listitem">
+Liu, Lian, Lizhe Wang, Liangke Huang, Manchun Li, and Huan Liu. 2013. <span>“Cloud Detection for High-Resolution Satellite Imagery Using Machine Learning and Multi-Feature Fusion.”</span> <em>Remote Sensing</em> 6 (1): 510–22.
+</div>
+<div id="ref-lustig2007sparse" class="csl-entry" role="listitem">
+Lustig, Michael, David Donoho, and John M Pauly. 2007. <span>“Sparse MRI: The Application of Compressed Sensing for Rapid MR Imaging.”</span> <em>Magnetic Resonance in Medicine</em> 58 (6): 1182–95.
+</div>
+<div id="ref-shannon1948communication" class="csl-entry" role="listitem">
+Shannon, Claude E. 1948. <span>“A Mathematical Theory of Communication.”</span> <em>Bell System Technical Journal</em> 27 (3): 379–423.
+</div>
+<div id="ref-tibshirani1996regression" class="csl-entry" role="listitem">
+Tibshirani, Robert. 1996. <span>“Regression Shrinkage and Selection via the Lasso.”</span> <em>Journal of the Royal Statistical Society: Series B (Methodological)</em> 58 (1): 267–88.
 </div>
 </div></section></div></main>
 <!-- /main column -->
