@@ -1,115 +1,146 @@
+import os
+import sys
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import RepeatedKFold
 from joblib import Parallel, delayed
+from tqdm.notebook import tqdm
+import warnings
+
+# Add path to src to sys
+sys.path.append(os.path.join(os.getcwd(), '../src'))
+
 from blockfy import Blockfy
 from basisgen import BasisGenerator
-from tqdm import tqdm
+
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 class LassoAlphaOptimizer:
-    """A class for optimizing alpha parameters for Lasso regression on image blocks.
-
-    This class provides functionality to:
-    1. Optimize alpha parameters for Lasso regression on corrupted image blocks
-    2. Return the best alpha parameters for each block
-
-    Attributes:
-        S (int): Number of sensed pixels per block
-        M (int): Number of training samples
-        test_train_split (float): Ratio of test to training data (e.g., 0.2 for 80-20 split)
-        P (int): Height of the basis chips
-        Q (int): Width of the basis chips
-        basis_generator (BasisGenerator): Instance of BasisGenerator for generating basis matrices
-        blockifier (Blockfy): Instance of Blockfy for processing image blocks
-        alpha_values (np.ndarray): Precomputed array of alpha values for Lasso regression
-    """
-
-    def __init__(self, S: int, M: int, test_train_split: float = 0.2, P: int = 8, Q: int = 8):
-        """Initialize the LassoAlphaOptimizer instance.
-
-        Args:
-            S (int): Number of sensed pixels per block
-            M (int): Number of training samples
-            test_train_split (float): Ratio of test to training data (default: 0.2)
-            P (int): Height of the basis chips (default: 8)
-            Q (int): Width of the basis chips (default: 8)
-        """
+    def __init__(self, S, M, train_test_ratio, P, Q):
         self.S = S
         self.M = M
-        self.test_train_split = test_train_split
+        self.train_test_ratio = train_test_ratio
         self.P = P
         self.Q = Q
-        self.m = int(test_train_split * self.P * self.Q)
-        self.basis_generator = BasisGenerator(P, Q, uv_orientation=True)
-        self.blockifier = None
-        self.alpha_values = np.logspace(-8, 8, 30)  # Precompute alpha values
-
-    def _process_block(self, corrupted_block, basis_matrix, alpha_values, rkf):
-        """Process a single block to find the best alpha value.
-
-        Args:
-            corrupted_block (np.ndarray): The corrupted image block.
-            basis_matrix (np.ndarray): The basis matrix.
-            alpha_values (np.ndarray): Array of alpha values to test.
-            rkf (RepeatedKFold): RepeatedKFold instance for cross-validation.
-
-        Returns:
-            float: The best alpha value for the block.
+        self.basis_generator = BasisGenerator(P, Q)
+        
+        # Define the range of alpha values to test
+        self.alpha_values = np.logspace(-10, 1, 20)
+        
+        # Calculate m (number of splits) based on train_test_ratio
+        self.m = int(1 / self.train_test_ratio)
+    
+    def _process_block(self, block, basis_matrix, alpha_values):
         """
-        chip_flat = corrupted_block.flatten()
-        good_pixels_idx = np.where(~np.isnan(chip_flat))[0]
-        chip_flat = chip_flat[good_pixels_idx]
-        bm_chip = basis_matrix[good_pixels_idx]
-
-        mse_values = np.full(len(alpha_values), np.inf)  # Preallocate with high values
-
-        for j, a in enumerate(alpha_values):
-            mse_fold = []
-            for train_index, test_index in rkf.split(bm_chip):
-                lasso = Lasso(alpha=a, fit_intercept=False, max_iter=5000, tol=1e-4)
-                lasso.fit(bm_chip[train_index], chip_flat[train_index])
-
-                recov_chip = np.dot(basis_matrix, lasso.coef_).reshape(self.P, self.Q)
-
-                # Only compare valid pixels
-                test_pixels = good_pixels_idx[test_index]
-                mse = mean_squared_error(corrupted_block.flat[test_pixels], recov_chip.flat[test_pixels])
-                mse_fold.append(mse)
-
-            mse_values[j] = np.nanmean(mse_fold)
-
-        return alpha_values[np.nanargmin(mse_values)]
+        Process a single block to find the optimal alpha value.
+        
+        Parameters:
+        -----------
+        block : numpy.ndarray
+            The image block to process
+        basis_matrix : numpy.ndarray
+            The basis matrix for the block
+        alpha_values : numpy.ndarray
+            The alpha values to test
+            
+        Returns:
+        --------
+        float
+            The best alpha value for the block
+        """
+        # Get the flattened block and identify non-NaN indices
+        blk_flat = block.flatten()
+        good_idx = np.where(~np.isnan(blk_flat))[0].astype(int)
+        
+        # If block has too few non-NaN values, return default alpha
+        if len(good_idx) < 5:  # Need at least 5 samples for meaningful CV
+            return alpha_values[len(alpha_values) // 2]  # Return middle value as default
+        
+        # Extract the valid values from the block
+        X = basis_matrix[good_idx, :]
+        y = blk_flat[good_idx]
+        
+        # Determine appropriate number of splits for cross-validation
+        # Must be at least 2 and less than number of samples
+        n_splits = min(5, max(2, len(good_idx) // 2))
+        n_repeats = max(1, self.M // n_splits)  # Adjust repeats to maintain similar total iterations
+        
+        # Create K-fold cross-validator
+        rkf = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats)
+        
+        # Initialize variables to track the best alpha
+        min_mse = float('inf')
+        best_alpha = None
+        
+        # Test each alpha value using cross-validation
+        for alpha in alpha_values:
+            mse_values = []
+            try:
+                for train_index, test_index in rkf.split(X):
+                    X_train, X_test = X[train_index], X[test_index]
+                    y_train, y_test = y[train_index], y[test_index]
+                    
+                    # Fit Lasso model with current alpha
+                    lasso = Lasso(alpha=alpha, fit_intercept=False, max_iter=10000)
+                    lasso.fit(X_train, y_train)
+                    
+                    # Evaluate on test set
+                    y_pred = lasso.predict(X_test)
+                    mse = np.mean((y_test - y_pred)**2)
+                    mse_values.append(mse)
+                
+                # Calculate mean MSE across all folds
+                mean_mse = np.mean(mse_values)
+                
+                # Update best alpha if this one is better
+                if mean_mse < min_mse:
+                    min_mse = mean_mse
+                    best_alpha = alpha
+            except Exception as e:
+                # If an error occurs, just continue with next alpha
+                continue
+        
+        # If no valid alpha was found, return default
+        if best_alpha is None:
+            return alpha_values[len(alpha_values) // 2]
+            
+        return best_alpha
 
     def optimize_alphas(self, img_input, is_corrupted=False):
-        """Optimize alpha parameters for Lasso regression on corrupted image blocks.
-
-        Args:
-            img_input: Either a path to the input image file (str) or a numpy array containing the image.
-
-        Returns:
-            np.ndarray: Array of best alpha parameters for each block.
         """
-        # Handle either file path or numpy array input
-        if isinstance(img_input, str):
-            self.blockifier = Blockfy(img_input, (self.P, self.Q), self.P)
-        else:
-            # Assume it's a numpy array containing the image
-            self.blockifier = Blockfy(img_input, block_shape=(self.P, self.Q), block_step=self.P)
+        Optimize alpha values for Lasso regression on each image block.
         
+        Parameters:
+        -----------
+        img_input : str or numpy.ndarray
+            Path to the image file or corrupted image array
+        is_corrupted : bool
+            Whether the input is already a corrupted image array
+            
+        Returns:
+        --------
+        numpy.ndarray
+            Array of optimized alpha values for each block
+        """
+        # Initialize Blockfy
+        blockfy = Blockfy(img_input, (self.P, self.Q), self.P)
+        blockfy.generate_blocks()
+        
+        # Get corrupted blocks
         if is_corrupted:
-            self.blockifier.generate_blocks()
-            corrupted_blocks = self.blockifier.get_blocks()
+            corrupted_blocks = blockfy.get_blocks()
         else:
-            self.blockifier.generate_blocks()
-            corrupted_blocks = self.blockifier.generate_corrupted_blocks(sensed_pixels=self.S)
+            corrupted_blocks = blockfy.generate_corrupted_blocks(self.S)
         
+        # Generate basis matrix
         basis_matrix = self.basis_generator.generate_basis_matrix()
-        rkf = RepeatedKFold(n_splits=self.m, n_repeats=self.M)
-
-        best_alphas = Parallel(n_jobs=min(len(corrupted_blocks), -1))(
-                delayed(self._process_block)(corrupted_blocks[i], basis_matrix, self.alpha_values, rkf)
-                for i in tqdm(range(len(corrupted_blocks)), desc="Optimizing alphas", unit="blocks")
+        
+        # Process blocks in parallel to find optimal alphas
+        best_alphas = Parallel(n_jobs=min(len(corrupted_blocks), os.cpu_count()))(
+            delayed(self._process_block)(corrupted_blocks[i], basis_matrix, self.alpha_values)
+            for i in tqdm(range(len(corrupted_blocks)), desc="Optimizing alphas", unit="blocks")
         )
-
+        
         return np.array(best_alphas)
