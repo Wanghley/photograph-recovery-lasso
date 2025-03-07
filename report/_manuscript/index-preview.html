@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+    <meta charset="utf-8">
+    <meta name="generator" content="quarto-1.5.57">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+    <title>Image Recovery with Regularized Regression</title>
+    <style>
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.columns{display: flex; gap: min(4vw, 1.5em);}
+      div.column{flex: auto; overflow-x: auto;}
+      div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+      ul.task-list{list-style: none;}
+      ul.task-list li input[type="checkbox"] {
+        width: 0.8em;
+        margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+        vertical-align: middle;
+      }
+      /* CSS for citations */
+      div.csl-bib-body { }
+      div.csl-entry {
+        clear: both;
+        margin-bottom: 0em;
+      }
+      .hanging-indent div.csl-entry {
+        margin-left:2em;
+        text-indent:-2em;
+      }
+      div.csl-left-margin {
+        min-width:2em;
+        float:left;
+      }
+      div.csl-right-inline {
+        margin-left:2em;
+        padding-left:1em;
+      }
+      div.csl-indent {
+        margin-left: 2em;
+      }    </style>
+
+    <style>
+      body.hypothesis-enabled #quarto-embed-header {
+        padding-right: 36px;
+      }
+
+      #quarto-embed-header {
+        height: 3em;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: solid 1px;
+      }
+
+      #quarto-embed-header h6 {
+        font-size: 1.1em;
+        padding-top: 0.6em;
+        margin-left: 1em;
+        margin-right: 1em;
+        font-weight: 400;
+      }
+
+      #quarto-embed-header a.quarto-back-link,
+      #quarto-embed-header a.quarto-download-embed {
+        font-size: 0.8em;
+        margin-top: 1em;
+        margin-bottom: 1em;
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+
+      .quarto-back-container {
+        padding-left: 0.5em;
+        display: flex;
+      }
+
+      .headroom {
+          will-change: transform;
+          transition: transform 200ms linear;
+      }
+
+      .headroom--pinned {
+          transform: translateY(0%);
+      }
+
+      .headroom--unpinned {
+          transform: translateY(-100%);
+      }      
+    </style>
+
+    <script>
+    window.document.addEventListener("DOMContentLoaded", function () {
+
+      var header = window.document.querySelector("#quarto-embed-header");
+      const titleBannerEl = window.document.querySelector("body > #title-block-header");
+      if (titleBannerEl) {
+        titleBannerEl.style.paddingTop = header.clientHeight + "px";
+      }
+      const contentEl = window.document.getElementById('quarto-content');
+      for (const child of contentEl.children) {
+        child.style.paddingTop = header.clientHeight + "px";
+        child.style.marginTop = "1em";
+      }
+
+      // Use the article root if the `back` call doesn't work. This isn't perfect
+      // but should typically work
+      window.quartoBackToArticle = () => {
+        var currentUrl = window.location.href;
+        window.history.back();
+        setTimeout(() => {
+            // if location was not changed in 100 ms, then there is no history back
+            if(currentUrl === window.location.href){              
+                // redirect to site root
+                window.location.href = "index.html";
+            }
+        }, 100);
+      }
+
+      const headroom = new window.Headroom(header, {
+        tolerance: 5,
+        onPin: function () {
+        },
+        onUnpin: function () {
+        },
+      });
+      headroom.init();
+    });
+    </script>
+
+    
+<script src="site_libs/manuscript-notebook/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+     <script async="" src="https://hypothes.is/embed.js"></script>
+<script>
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    document.body.classList.add('hypothesis-enabled');
+  });
+</script>  <script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script> 
+      <meta name="citation_title" content="Image Recovery with Regularized Regression">
+<meta name="citation_abstract" content="This paper presents a method for recovering images with missing pixel information using L1-regularized regression (LASSO).
+We develop a block-based approach that processes images in small sections, generating basis vectors through discrete cosine
+transforms (DCT) and optimizing the regularization parameter for each block using random subset cross-validation. Results
+demonstrate significant recovery quality improvements compared to traditional interpolation methods, successfully preserving edge
+details and minimizing artifacts. Performance analysis shows the effectiveness across various corruption levels and image types,
+establishing this technique as viable for photographic recovery applications.
+">
+<meta name="citation_author" content="Wanghley Soares Martins">
+<meta name="citation_language" content="en">
+<meta name="citation_reference" content="citation_title=Discrete cosine transform;,citation_author=Nasir Ahmed;,citation_author=T Natarajan;,citation_author=Kamisetty R Rao;,citation_publication_date=1974;,citation_cover_date=1974;,citation_year=1974;,citation_issue=1;,citation_volume=100;,citation_journal_title=IEEE transactions on Computers;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Sparse MRI: The application of compressed sensing for rapid MR imaging;,citation_author=Michael Lustig;,citation_author=David Donoho;,citation_author=John M Pauly;,citation_publication_date=2007;,citation_cover_date=2007;,citation_year=2007;,citation_issue=6;,citation_volume=58;,citation_journal_title=Magnetic resonance in medicine;,citation_publisher=Wiley Online Library;">
+<meta name="citation_reference" content="citation_title=Cloud detection for high-resolution satellite imagery using machine learning and multi-feature fusion;,citation_author=Lian Liu;,citation_author=Lizhe Wang;,citation_author=Liangke Huang;,citation_author=Manchun Li;,citation_author=Huan Liu;,citation_publication_date=2013;,citation_cover_date=2013;,citation_year=2013;,citation_issue=1;,citation_volume=6;,citation_journal_title=Remote Sensing;,citation_publisher=MDPI;">
+<meta name="citation_reference" content="citation_title=A mathematical theory of communication;,citation_author=Claude Elwood Shannon;,citation_publication_date=1948;,citation_cover_date=1948;,citation_year=1948;,citation_issue=3;,citation_volume=27;,citation_journal_title=Bell System technical journal;,citation_publisher=Nokia Bell Labs;">
+<meta name="citation_reference" content="citation_title=Regression shrinkage and selection via the lasso;,citation_author=Robert Tibshirani;,citation_publication_date=1996;,citation_cover_date=1996;,citation_year=1996;,citation_issue=1;,citation_volume=58;,citation_journal_title=Journal of the Royal Statistical Society: Series B (Methodological);,citation_publisher=Wiley Online Library;">
+<meta name="citation_reference" content="citation_title=A mathematical theory of communication;,citation_author=Claude E Shannon;,citation_publication_date=1948;,citation_cover_date=1948;,citation_year=1948;,citation_issue=3;,citation_volume=27;,citation_journal_title=Bell system technical journal;,citation_publisher=Nokia Bell Labs;">
+<meta name="citation_reference" content="citation_title=Discrete cosine transform;,citation_author=Nasir Ahmed;,citation_author=T Natarajan;,citation_author=Kamisetty R Rao;,citation_publication_date=1974;,citation_cover_date=1974;,citation_year=1974;,citation_issue=1;,citation_volume=100;,citation_journal_title=IEEE transactions on Computers;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Survey: Interpolation methods in medical image processing;,citation_author=Thomas M Lehmann;,citation_author=Claudia Gönner;,citation_author=Klaus Spitzer;,citation_publication_date=1999;,citation_cover_date=1999;,citation_year=1999;,citation_issue=11;,citation_volume=18;,citation_journal_title=IEEE transactions on medical imaging;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Digital image processing;,citation_author=Rafael C. Gonzalez;,citation_author=Richard E. Woods;,citation_publication_date=2018;,citation_cover_date=2018;,citation_year=2018;,citation_isbn=978-0-13-467074-4;">
+<meta name="citation_reference" content="citation_title=Robust uncertainty principles: Exact signal reconstruction from highly incomplete frequency information;,citation_author=Emmanuel J Candès;,citation_author=Justin Romberg;,citation_author=Terence Tao;,citation_publication_date=2006;,citation_cover_date=2006;,citation_year=2006;,citation_issue=2;,citation_volume=52;,citation_journal_title=IEEE Transactions on Information Theory;,citation_publisher=IEEE;">
+<meta name="citation_reference" content="citation_title=Image inpainting;,citation_author=Marcelo Bertalmio;,citation_author=Guillermo Sapiro;,citation_author=Vincent Caselles;,citation_author=Coloma Ballester;,citation_publication_date=2000;,citation_cover_date=2000;,citation_year=2000;,citation_doi=10.1145/344779.344972;,citation_conference_title=Proceedings of the 27th annual conference on computer graphics and interactive techniques;,citation_conference=ACM Press/Addison-Wesley Publishing Co.;">
+<meta name="citation_reference" content="citation_title=Image denoising and inpainting with deep neural networks;,citation_author=Junyuan Xie;,citation_author=Linli Xu;,citation_author=Enhong Chen;,citation_publication_date=2012;,citation_cover_date=2012;,citation_year=2012;,citation_volume=25;,citation_conference_title=Advances in neural information processing systems;">
+<meta name="citation_reference" content="citation_title=Statistical learning with sparsity: The lasso and generalizations;,citation_author=Trevor Hastie;,citation_author=Robert Tibshirani;,citation_author=Martin Wainwright;,citation_publication_date=2015;,citation_cover_date=2015;,citation_year=2015;">
+<meta name="citation_reference" content="citation_title=Least angle regression;,citation_author=Bradley Efron;,citation_author=Trevor Hastie;,citation_author=Iain Johnstone;,citation_author=Robert Tibshirani;,citation_publication_date=2004;,citation_cover_date=2004;,citation_year=2004;,citation_issue=2;,citation_volume=32;,citation_journal_title=The Annals of statistics;,citation_publisher=Institute of Mathematical Statistics;">
+</head>
+
+  <body class="quarto-notebook">
+    <div id="quarto-embed-header" class="headroom fixed-top bg-primary">
+      
+      <a onclick="window.quartoBackToArticle(); return false;" class="btn btn-primary quarto-back-link" href=""><i class="bi bi-caret-left"></i> Back to Article</a>
+      <h6><i class="bi bi-journal-code"></i> Article Notebook</h6>
+
+            <a href="./index.qmd" class="btn btn-primary quarto-download-embed" download="index.qmd">Download Source</a>
+          </div>
+
+     <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Image Recovery with Regularized Regression</h1>
+            <p class="subtitle lead">Reconstructing Photographs Using LASSO Regression</p>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+            <div class="quarto-title-meta-author">
+          <div class="quarto-title-meta-heading">Author</div>
+          <div class="quarto-title-meta-heading">Affiliation</div>
+          
+                <div class="quarto-title-meta-contents">
+            <p class="author">Wanghley Soares Martins </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        Duke University
+                      </p>
+                  </div>
+                    </div>
+        
+        <div class="quarto-title-meta">
+
+                      
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      </div>
+    </div>
+
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>This paper presents a method for recovering images with missing pixel information using L1-regularized regression (LASSO). We develop a block-based approach that processes images in small sections, generating basis vectors through discrete cosine transforms (DCT) and optimizing the regularization parameter for each block using random subset cross-validation. Results demonstrate significant recovery quality improvements compared to traditional interpolation methods, successfully preserving edge details and minimizing artifacts. Performance analysis shows the effectiveness across various corruption levels and image types, establishing this technique as viable for photographic recovery applications.</p>
+      </div>
+    </div>
+
+
+    <div class="quarto-other-links-text-target">
+    </div>  </div>
+</header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a>
+  <ul class="collapse">
+  <li><a href="#the-challenge-of-image-corruption" id="toc-the-challenge-of-image-corruption" class="nav-link" data-scroll-target="#the-challenge-of-image-corruption"><span class="header-section-number">1.1</span> The Challenge of Image Corruption</a></li>
+  </ul></li>
+  <li><a href="#background-and-related-work" id="toc-background-and-related-work" class="nav-link" data-scroll-target="#background-and-related-work"><span class="header-section-number">2</span> Background and Related Work</a>
+  <ul class="collapse">
+  <li><a href="#image-recovery-techniques" id="toc-image-recovery-techniques" class="nav-link" data-scroll-target="#image-recovery-techniques"><span class="header-section-number">2.1</span> Image Recovery Techniques</a></li>
+  </ul></li>
+  <li><a href="#lasso-regression-mathematical-formulation" id="toc-lasso-regression-mathematical-formulation" class="nav-link" data-scroll-target="#lasso-regression-mathematical-formulation"><span class="header-section-number">3</span> LASSO Regression: Mathematical Formulation</a>
+  <ul class="collapse">
+  <li><a href="#core-optimization-problem" id="toc-core-optimization-problem" class="nav-link" data-scroll-target="#core-optimization-problem"><span class="header-section-number">3.1</span> Core Optimization Problem</a></li>
+  <li><a href="#key-mathematical-properties" id="toc-key-mathematical-properties" class="nav-link" data-scroll-target="#key-mathematical-properties"><span class="header-section-number">3.2</span> Key Mathematical Properties</a></li>
+  <li><a href="#geometric-interpretation" id="toc-geometric-interpretation" class="nav-link" data-scroll-target="#geometric-interpretation"><span class="header-section-number">3.3</span> Geometric Interpretation</a></li>
+  <li><a href="#block-wise-implementation" id="toc-block-wise-implementation" class="nav-link" data-scroll-target="#block-wise-implementation"><span class="header-section-number">3.4</span> Block-Wise Implementation</a></li>
+  <li><a href="#comparison-with-alternative-methods" id="toc-comparison-with-alternative-methods" class="nav-link" data-scroll-target="#comparison-with-alternative-methods"><span class="header-section-number">3.5</span> Comparison with Alternative Methods</a></li>
+  <li><a href="#computational-considerations" id="toc-computational-considerations" class="nav-link" data-scroll-target="#computational-considerations"><span class="header-section-number">3.6</span> Computational Considerations</a></li>
+  <li><a href="#limitations-of-traditional-interpolation-methods" id="toc-limitations-of-traditional-interpolation-methods" class="nav-link" data-scroll-target="#limitations-of-traditional-interpolation-methods"><span class="header-section-number">3.7</span> Limitations of Traditional Interpolation Methods</a></li>
+  <li><a href="#lasso-as-a-sparse-recovery-paradigm" id="toc-lasso-as-a-sparse-recovery-paradigm" class="nav-link" data-scroll-target="#lasso-as-a-sparse-recovery-paradigm"><span class="header-section-number">3.8</span> LASSO as a Sparse Recovery Paradigm</a></li>
+  <li><a href="#applications-and-impact" id="toc-applications-and-impact" class="nav-link" data-scroll-target="#applications-and-impact"><span class="header-section-number">3.9</span> Applications and Impact</a></li>
+  <li><a href="#addressing-key-technical-challenges" id="toc-addressing-key-technical-challenges" class="nav-link" data-scroll-target="#addressing-key-technical-challenges"><span class="header-section-number">3.10</span> Addressing Key Technical Challenges</a></li>
+  </ul></li>
+  <li><a href="#methodology" id="toc-methodology" class="nav-link" data-scroll-target="#methodology"><span class="header-section-number">4</span> Methodology</a>
+  <ul class="collapse">
+  <li><a href="#image-representation-and-block-processing" id="toc-image-representation-and-block-processing" class="nav-link" data-scroll-target="#image-representation-and-block-processing"><span class="header-section-number">4.1</span> Image Representation and Block Processing</a></li>
+  <li><a href="#basis-generation" id="toc-basis-generation" class="nav-link" data-scroll-target="#basis-generation"><span class="header-section-number">4.2</span> Basis Generation</a></li>
+  <li><a href="#lasso-optimization" id="toc-lasso-optimization" class="nav-link" data-scroll-target="#lasso-optimization"><span class="header-section-number">4.3</span> LASSO Optimization</a></li>
+  <li><a href="#regularization-parameter-selection" id="toc-regularization-parameter-selection" class="nav-link" data-scroll-target="#regularization-parameter-selection"><span class="header-section-number">4.4</span> Regularization Parameter Selection</a></li>
+  <li><a href="#post-processing-filters" id="toc-post-processing-filters" class="nav-link" data-scroll-target="#post-processing-filters"><span class="header-section-number">4.5</span> Post-Processing Filters</a></li>
+  <li><a href="#validation-metrics" id="toc-validation-metrics" class="nav-link" data-scroll-target="#validation-metrics"><span class="header-section-number">4.6</span> Validation Metrics</a></li>
+  <li><a href="#implementation-validation" id="toc-implementation-validation" class="nav-link" data-scroll-target="#implementation-validation"><span class="header-section-number">4.7</span> Implementation Validation</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">5</span> Results</a>
+  <ul class="collapse">
+  <li><a href="#cross-validation-with-k-fold-creation" id="toc-cross-validation-with-k-fold-creation" class="nav-link" data-scroll-target="#cross-validation-with-k-fold-creation"><span class="header-section-number">5.1</span> Cross-Validation with K-Fold Creation</a></li>
+  <li><a href="#mse-estimation-from-k-folds" id="toc-mse-estimation-from-k-folds" class="nav-link" data-scroll-target="#mse-estimation-from-k-folds"><span class="header-section-number">5.2</span> MSE Estimation from K-Folds</a></li>
+  <li><a href="#alpha-parameter-selection-from-cross-validation" id="toc-alpha-parameter-selection-from-cross-validation" class="nav-link" data-scroll-target="#alpha-parameter-selection-from-cross-validation"><span class="header-section-number">5.3</span> Alpha Parameter Selection from Cross-Validation</a></li>
+  <li><a href="#application-of-different-filters" id="toc-application-of-different-filters" class="nav-link" data-scroll-target="#application-of-different-filters"><span class="header-section-number">5.4</span> Application of Different Filters</a></li>
+  <li><a href="#validation-of-best-filter-based-on-mse-and-psnr" id="toc-validation-of-best-filter-based-on-mse-and-psnr" class="nav-link" data-scroll-target="#validation-of-best-filter-based-on-mse-and-psnr"><span class="header-section-number">5.5</span> Validation of Best Filter Based on MSE and PSNR</a></li>
+  <li><a href="#summary-results-and-key-findings" id="toc-summary-results-and-key-findings" class="nav-link" data-scroll-target="#summary-results-and-key-findings"><span class="header-section-number">5.6</span> Summary Results and Key Findings</a></li>
+  <li><a href="#qualitative-validation-on-field-test-image" id="toc-qualitative-validation-on-field-test-image" class="nav-link" data-scroll-target="#qualitative-validation-on-field-test-image"><span class="header-section-number">5.7</span> Qualitative Validation on Field Test Image</a></li>
+  </ul></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion"><span class="header-section-number">6</span> Discussion</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">7</span> Conclusion</a></li>
+  <li><a href="#future-work" id="toc-future-work" class="nav-link" data-scroll-target="#future-work"><span class="header-section-number">8</span> Future Work</a></li>
+  <li><a href="#acknowledgments" id="toc-acknowledgments" class="nav-link" data-scroll-target="#acknowledgments"><span class="header-section-number">9</span> Acknowledgments</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">10</span> References</a></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">      
+
+       <p><strong>Availability</strong>: The code for this project is available on <a href="https://github.com/wanghley/photograph-recovery-lasso">GitHub</a>.</p>
+<p><strong>This paper is a project for the course “ECE580: Machine Learning for Engineering Applications” at Duke University.</strong></p>
+<p>originally available at <a href="https://wanghley.github.io/photograph-recovery-lasso/">wanghley.com</a></p>
+<section id="introduction" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="introduction"><span class="header-section-number">1</span> Introduction</h2>
+<section id="the-challenge-of-image-corruption" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="the-challenge-of-image-corruption"><span class="header-section-number">1.1</span> The Challenge of Image Corruption</h3>
+<p>Digital images are fundamental to various fields, including medical diagnostics, remote sensing, and digital forensics. However, these images are frequently compromised by data loss stemming from multiple sources:</p>
+<ul>
+<li><strong>Transmission errors</strong>: Wireless communication channels, particularly in satellite and deep-space imaging, are prone to signal degradation and packet loss <span class="citation" data-cites="shannon1948communication">(<a href="#ref-shannon1948communication" role="doc-biblioref">Shannon 1948</a>)</span>.</li>
+<li><strong>Sensor malfunctions</strong>: Imperfections in CCD and CMOS sensors introduce missing or corrupted pixel values, significantly impacting applications such as astronomical imaging.</li>
+<li><strong>Storage medium degradation</strong>: The preservation of historical archives and film negatives is challenged by physical deterioration and incomplete digital backups.</li>
+<li><strong>Intentional compression</strong>: Security and surveillance systems often rely on aggressive compression techniques to optimize bandwidth, leading to irreversible data loss.</li>
+</ul>
+<p>Reconstructing these degraded images is a fundamental challenge in image processing <span class="citation" data-cites="gonzalez2018digital">(<a href="#ref-gonzalez2018digital" role="doc-biblioref">Gonzalez and Woods 2018</a>)</span>. Traditional approaches like interpolation methods often fail to preserve important image features and may introduce artifacts, particularly when a significant portion of the pixels is missing. This project is highly relevant to the area of compressive sensing, where high-quality data is reconstructed from relatively few data points.</p>
+<p>This study is based on the use of two different pictures for exploration, a fishing boat and a nature scene. The fishing boat image is 512x512 pixels, while the nature scene is 1024x1024 pixels, as depicted on Figure 1 bellow.</p>
+<!-- include figure 1, fishing boat and nature scene images side by side -->
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;"><img src="assets/fishing_boat.bmp" class="img-fluid" style="width:60.0%"></th>
+<th style="text-align: center;"><img src="assets/nature.bmp" class="img-fluid" style="width:80.0%"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">(a)</td>
+<td style="text-align: center;">(b)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 1:</strong> (a) Fishing boat image (512x512 pixels) and (b) Nature scene image (1024x1024 pixels).</p>
+<p>This paper presents an approach to image recovery using regularized regression, specifically the Least Absolute Shrinkage and Selection Operator (LASSO) technique <span class="citation" data-cites="tibshirani1996regression">(<a href="#ref-tibshirani1996regression" role="doc-biblioref">Tibshirani 1996</a>)</span>. Our method treats image reconstruction as a sparse signal recovery problem, leveraging the compressibility of natural images in transform domains. We address the ill-posed nature of the regression problem (fewer observations than pixels to estimate) by imposing sparsity via L1-norm regularization. This allows us to estimate missing data by determining the underlying 2D function representing the pixel intensity, from which the missing observation can be inferred.</p>
+<p>The main contributions of this work include:</p>
+<ol type="1">
+<li>A block-based framework for image recovery that processes the image in manageable sections (K=8 for “Fishing Boat”, K=16 for “Nature”)</li>
+<li>An adaptive regularization parameter selection strategy for optimal reconstruction using random subset cross-validation.</li>
+<li>Comparative analysis with other recovery methods, including a post-processing median filter.</li>
+<li>Comprehensive evaluation adhering to the simulation parameters.</li>
+</ol>
+</section>
+</section>
+<section id="background-and-related-work" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="background-and-related-work"><span class="header-section-number">2</span> Background and Related Work</h2>
+<section id="image-recovery-techniques" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="image-recovery-techniques"><span class="header-section-number">2.1</span> Image Recovery Techniques</h3>
+<p>Image recovery encompasses a range of techniques aimed at reconstructing original image content from corrupted or incomplete observations. Common approaches include:</p>
+<ul>
+<li><strong>Interpolation methods</strong>: Techniques like bilinear, bicubic, and nearest-neighbor interpolation that estimate missing pixel values based on surrounding pixels <span class="citation" data-cites="lehmann1999survey">(<a href="#ref-lehmann1999survey" role="doc-biblioref">Lehmann, Gönner, and Spitzer 1999</a>)</span></li>
+<li><strong>Inpainting algorithms</strong>: Methods that fill missing regions by propagating information from surrounding areas <span class="citation" data-cites="bertalmio2000image">(<a href="#ref-bertalmio2000image" role="doc-biblioref">Bertalmio et al. 2000</a>)</span></li>
+<li><strong>Compressed sensing</strong>: Approaches that exploit sparsity in transform domains to recover signals from incomplete measurements <span class="citation" data-cites="candes2006robust">(<a href="#ref-candes2006robust" role="doc-biblioref">Candès, Romberg, and Tao 2006</a>)</span></li>
+<li><strong>Deep learning approaches</strong>: Neural network-based methods that learn to reconstruct missing information <span class="citation" data-cites="xie2012image">(<a href="#ref-xie2012image" role="doc-biblioref">Xie, Xu, and Chen 2012</a>)</span></li>
+</ul>
+</section>
+</section>
+<section id="lasso-regression-mathematical-formulation" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="lasso-regression-mathematical-formulation"><span class="header-section-number">3</span> LASSO Regression: Mathematical Formulation</h2>
+<section id="core-optimization-problem" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="core-optimization-problem"><span class="header-section-number">3.1</span> Core Optimization Problem</h3>
+<p>The LASSO estimator solves the convex optimization problem: <span class="math display">\[
+\hat{\beta} = \arg\min_{\beta} \left( \underbrace{\|\mathbf{y} - \mathbf{X}\beta\|_2^2}_{\text{Data Fidelity}} + \underbrace{\alpha\|\beta\|_1}_{\text{Sparsity Constraint}} \right)
+\]</span></p>
+<p>Where: - <span class="math inline">\(\mathbf{y} \in \mathbb{R}^n\)</span>: Observed pixel intensities (vectorized sensed pixels) - <span class="math inline">\(\mathbf{X} \in \mathbb{R}^{n \times p}\)</span>: DCT basis matrix (n = sensed pixels, p = total basis functions) - <span class="math inline">\(\beta \in \mathbb{R}^p\)</span>: Sparse coefficient vector to estimate - <span class="math inline">\(\alpha \geq 0\)</span>: Regularization strength parameter</p>
+<div style="text-align: center;" class="">
+<div class="cell-container"><div class="cell-decorator"><pre>In [1]:</pre></div><div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph LR
+  A["Corrupted Block"] --&gt; B["Extract Pixels y &amp; Basis Matrix X"]
+  B --&gt; C["Generate DCT Basis"]
+  C --&gt; D["Solve LASSO"]
+  D --&gt; E["Reconstruct Xβ"]
+  E --&gt; F["Assemble Image"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div></div>
+<p><strong>Figure 2:</strong> Workflow of LASSO-based image recovery.<br>
+<em>Source: Author, 2025</em></p>
+</div>
+</section>
+<section id="key-mathematical-properties" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="key-mathematical-properties"><span class="header-section-number">3.2</span> Key Mathematical Properties</h3>
+<ol type="1">
+<li><p><strong>Sparsity Induction</strong>: The L1 penalty induces exact zeros in the solution: <span class="math inline">\(\frac{\partial}{\partial\beta_j}\left(\|\mathbf{y}-\mathbf{X}\beta\|_2^2 + \alpha\|\beta\|_1\right) = -2\mathbf{x}_j^T(\mathbf{y}-\mathbf{X}\beta) + \alpha\,\text{sign}(\beta_j)\)</span> Leads to soft-thresholding solution: <span class="math inline">\(\beta_j = \mathcal{S}_\lambda\left(\mathbf{x}_j^T(\mathbf{y}-\mathbf{X}\beta_{-j})\right)\)</span> Where <span class="math inline">\(\mathcal{S}_\lambda(z) = \text{sign}(z)(|z|-\lambda)_+\)</span> is the soft-threshold operator.</p></li>
+<li><p><strong>Basis Adaptation</strong>: For 8×8 blocks (<span class="math inline">\(K=8\)</span>), we use 64 DCT basis functions: <span class="math inline">\(\phi_{u,v}(x,y) = \alpha_u\beta_v\cos\left(\frac{\pi(2x-1)(u-1)}{16}\right)\cos\left(\frac{\pi(2y-1)(v-1)}{16}\right)\)</span> Where <span class="math inline">\(u,v \in \{1,...,8\}\)</span> and <span class="math inline">\(\alpha_u\)</span>, <span class="math inline">\(\beta_v\)</span> are normalization factors from the PDF.</p></li>
+<li><p><strong>Intercept Handling</strong>: The DC component (<span class="math inline">\(u=1,v=1\)</span>) is treated as an unregularized intercept:</p>
+<p><span class="math display">\[\hat{\beta}_0 = \frac{1}{n}\sum_{i=1}^n y_i\]</span> Implemented via <code>fit_intercept=True</code> to prevent biased estimates.</p></li>
+</ol>
+</section>
+<section id="geometric-interpretation" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="geometric-interpretation"><span class="header-section-number">3.3</span> Geometric Interpretation</h3>
+<p>The LASSO solution occurs at the intersection of the residual sum-of-squares ellipsoid and the L1-ball: <span class="math display">\[\begin{cases}
+\|\mathbf{y} - \mathbf{X}\beta\|_2^2 \leq \epsilon \\
+\|\beta\|_1 \leq t
+\end{cases}\]</span> For images, this corresponds to the Pareto optimal tradeoff between reconstruction accuracy and coefficient sparsity.</p>
+</section>
+<section id="block-wise-implementation" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="block-wise-implementation"><span class="header-section-number">3.4</span> Block-Wise Implementation</h3>
+<p>Per the project methodology:</p>
+<ol type="1">
+<li><p><strong>Basis Construction</strong>: <span class="math inline">\(\mathbf{X} = [\phi_1 | \phi_2 | \cdots | \phi_{64}] \in \mathbb{R}^{S\times64}\)</span> Where <span class="math inline">\(S\)</span> = sensed pixels per block (10-50 for K=8)</p></li>
+<li><p><strong>Cross-Validation</strong>: Optimal <span class="math inline">\(\alpha\)</span> selected via random subset CV: <span class="math inline">\(\alpha^* = \arg\min_\alpha \frac{1}{M}\sum_{m=1}^M \|\mathbf{y}^{(m)}_{test} - \mathbf{X}^{(m)}_{test}\hat{\beta}^{(m)}(\alpha)\|_2^2\)</span> With <span class="math inline">\(M=20\)</span> folds and <span class="math inline">\(m=\lfloor S/6 \rfloor\)</span> test samples per fold.</p></li>
+</ol>
+</section>
+<section id="comparison-with-alternative-methods" class="level3" data-number="3.5">
+<h3 data-number="3.5" class="anchored" data-anchor-id="comparison-with-alternative-methods"><span class="header-section-number">3.5</span> Comparison with Alternative Methods</h3>
+<span class="math display">\[\begin{array}{l|l|l}
+\text{Method} &amp; \text{Penalty} &amp; \text{Image Recovery Performance} \\
+\hline
+\text{OLS} &amp; \|\beta\|_0 &amp; \text{Overfits, no sparse solution} \\
+\text{Ridge} &amp; \|\beta\|_2^2 &amp; \text{Dense solutions, blurs edges} \\
+\text{LASSO} &amp; \|\beta\|_1 &amp; \text{Sparse solutions, preserves edges} \\
+\end{array}\]</span>
+<div style="text-align: center;">
+<p><strong>Table 1:</strong> Comparison of regression methods for image recovery.<br> <em>Source: Author, 2025</em></p>
+</div>
+</section>
+<section id="computational-considerations" class="level3" data-number="3.6">
+<h3 data-number="3.6" class="anchored" data-anchor-id="computational-considerations"><span class="header-section-number">3.6</span> Computational Considerations</h3>
+<ul>
+<li><strong>Basis Orthogonality</strong>: DCT basis diagonalizes the Toeplitz matrix of natural image statistics.</li>
+<li><strong>Convergence</strong>: Coordinate descent converges in <span class="math inline">\(O(p^2)\)</span> per iteration for 8×8 blocks</li>
+<li><strong>Regularization Path</strong>: Computed via homotopy methods for <span class="math inline">\(\alpha \in [10^{-6},10^6]\)</span> (3 values/decade)</li>
+</ul>
+<p>As a general view, this task is very much parallelizable, as each block can be processed independently, allowing for efficient distributed implementations. This is one of the main differentiators from traditional interpolation methods, which are inherently sequential.</p>
+<p>A picture that took 2 hours to be processed could be processed in 2 minutes using a parallelized version of the LASSO regression., specifically on the <span class="math inline">\(\lambda\)</span> selection step, explained in more details in the methodology section.</p>
+<div style="text-align: center;" class="">
+<div class="cell-container"><div class="cell-decorator"><pre>In [2]:</pre></div><div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph LR
+    subgraph Line1
+        style Line1 fill:none,stroke:none
+        A[Image Block] --&gt; B[Sample S Pixels]
+        B --&gt; C[Generate DCT Basis]
+    end
+
+    subgraph Line2
+        style Line2 fill:none,stroke:none
+        D[CV for α Selection] --&gt; E[Solve LASSO]
+        E --&gt; F[Reconstruct Block]
+        F --&gt; G[Merge All Blocks]
+    end
+
+    C --&gt; D
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div></div>
+<p><strong>Figure 3:</strong> Parallelized LASSO workflow for image recovery.<br> <em>Source: Author, 2025</em></p>
+</div>
+<p>This formulation ensures mathematical consistency with the described block-based compressed sensing approach.</p>
+</section>
+<section id="limitations-of-traditional-interpolation-methods" class="level3" data-number="3.7">
+<h3 data-number="3.7" class="anchored" data-anchor-id="limitations-of-traditional-interpolation-methods"><span class="header-section-number">3.7</span> Limitations of Traditional Interpolation Methods</h3>
+<p>Traditional interpolation methods exhibit fundamental limitations when image corruption exceeds 30% . These failures stem from their reliance on local pixel correlations without considering global image structure or transform-domain sparsity <span class="citation" data-cites="gonzalez2018digital">(<a href="#ref-gonzalez2018digital" role="doc-biblioref">Gonzalez and Woods 2018</a>)</span>.</p>
+<section id="edge-blurring-spectral-leakage-in-linear-filters" class="level4" data-number="3.7.1">
+<h4 data-number="3.7.1" class="anchored" data-anchor-id="edge-blurring-spectral-leakage-in-linear-filters"><span class="header-section-number">3.7.1</span> 1. Edge Blurring: Spectral Leakage in Linear Filters</h4>
+<p><strong>Mechanism</strong>: <span class="math display">\[I_{\text{interp}}(x,y) = \sum_{i=-1}^1 \sum_{j=-1}^1 w_{ij}I(x+i,y+j)\]</span> Where <span class="math inline">\(w_{ij}\)</span> are fixed spatial weights. This linear convolution acts as low-pass filtering, attenuating high-frequency edge information <span class="citation" data-cites="lehmann1999survey">(<a href="#ref-lehmann1999survey" role="doc-biblioref">Lehmann, Gönner, and Spitzer 1999</a>)</span>.</p>
+<p><strong>Consequences</strong>: - Reduced modulation transfer function (MTF) at Nyquist frequency - Gibbs phenomenon at discontinuities (Figure 2a) - Effective resolution loss exceeding 40% at 50% corruption <span class="citation" data-cites="shannon1948communication">(<a href="#ref-shannon1948communication" role="doc-biblioref">Shannon 1948</a>)</span></p>
+</section>
+<section id="texture-loss-high-frequency-attenuation" class="level4" data-number="3.7.2">
+<h4 data-number="3.7.2" class="anchored" data-anchor-id="texture-loss-high-frequency-attenuation"><span class="header-section-number">3.7.2</span> 2. Texture Loss: High-Frequency Attenuation</h4>
+<p><strong>Mathematical Analysis</strong>: Interpolation kernels (bilinear/bicubic) have poor stopband rejection: <span class="math display">\[H(\omega_x,\omega_y) = \text{sinc}^n(k\omega_x)\text{sinc}^n(k\omega_y)\]</span> Where <span class="math inline">\(n=1\)</span> (bilinear) or <span class="math inline">\(n=3\)</span> (bicubic). This allows aliasing of frequencies above: <span class="math display">\[f_{\text{critical}} = \frac{1}{2d_{\text{sample}}}\]</span> With irregular sampling (common in image corruption), effective <span class="math inline">\(d_{\text{sample}}\)</span> becomes spatially variant, creating non-uniform frequency response.</p>
+<p><strong>Impact</strong>: - 60-80% loss of texture energy in high-frequency bands (&gt;0.25 cycles/pixel) - PSNR degradation follows: <span class="math display">\[\Delta\text{PSNR} \propto \log\left(\frac{N_{\text{missing}}}{N_{\text{total}}}\right)\]</span></p>
+</section>
+<section id="grid-artifacts-sampling-structure-mismatch" class="level4" data-number="3.7.3">
+<h4 data-number="3.7.3" class="anchored" data-anchor-id="grid-artifacts-sampling-structure-mismatch"><span class="header-section-number">3.7.3</span> 3. Grid Artifacts: Sampling-Structure Mismatch</h4>
+<p><strong>Fundamental Conflict</strong>: Natural images follow power-law spectra (<span class="math inline">\(1/f^\alpha\)</span>), while interpolation assumes stationary statistics. This creates:</p>
+<ol type="a">
+<li><p><strong>Aliasing Artifacts</strong>: Moire patterns from mismatched sampling grids: <span class="math display">\[\Lambda_{\text{artifact}} = \Lambda_{\text{image}} \cap \Lambda_{\text{sample}}\]</span></p></li>
+<li><p><strong>Spectral Splitting</strong>: Missing pixels create convolution in frequency domain: <span class="math display">\[\mathcal{F}\{I_{\text{corrupt}}\} = \mathcal{F}\{I\} \ast \mathcal{F}\{M\}\]</span> Where <span class="math inline">\(M\)</span> is binary mask matrix <span class="citation" data-cites="candes2006robust">(<a href="#ref-candes2006robust" role="doc-biblioref">Candès, Romberg, and Tao 2006</a>)</span></p></li>
+</ol>
+<p>This analysis directly informs our block-wise DCT/LASSO approach documented in the project PDF (Sections 4.2-4.3), where adaptive sparsity constraints overcome the spectral limitations of interpolation.</p>
+<p>To address these challenges, we propose a robust image recovery framework leveraging machine learning principles, specifically the Least Absolute Shrinkage and Selection Operator (LASSO), to reconstruct images from incomplete or corrupted data.</p>
+</section>
+</section>
+<section id="lasso-as-a-sparse-recovery-paradigm" class="level3" data-number="3.8">
+<h3 data-number="3.8" class="anchored" data-anchor-id="lasso-as-a-sparse-recovery-paradigm"><span class="header-section-number">3.8</span> LASSO as a Sparse Recovery Paradigm</h3>
+<p>LASSO regression <span class="citation" data-cites="tibshirani1996regression">(<a href="#ref-tibshirani1996regression" role="doc-biblioref">Tibshirani 1996</a>)</span> is well-suited for image recovery due to its ability to exploit the inherent sparsity of natural images. The key motivations for employing LASSO include:</p>
+<ul>
+<li><strong>Sparsity exploitation</strong>: Empirical studies indicate that natural images exhibit sparsity in the Discrete Cosine Transform (DCT) domain, with fewer than 5% of coefficients carrying significant information <span class="citation" data-cites="ahmed1974discrete">(<a href="#ref-ahmed1974discrete" role="doc-biblioref">Ahmed, Natarajan, and Rao 1974</a>)</span>.</li>
+<li><strong>Stability and robustness</strong>: The L1-regularization term in LASSO prevents overfitting, ensuring stable reconstructions even in the presence of noise and corruption.</li>
+<li><strong>Computational tractability</strong>: Convex optimization techniques facilitate efficient block-wise processing, making LASSO a practical solution for large-scale image recovery.</li>
+</ul>
+<p>Our approach introduces several innovations over existing methods:</p>
+<ul>
+<li><strong>Adaptive block-wise regularization</strong>: We employ a probability density function (PDF)-based methodology to dynamically select the regularization parameter <span class="math inline">\(\lambda\)</span> for each 8×8 image block.</li>
+<li><strong>Hybrid post-processing pipeline</strong>: A combination of median filtering and Gaussian smoothing mitigates impulse noise and block artifacts.</li>
+<li><strong>Comprehensive evaluation metrics</strong>: Our framework assesses image reconstruction quality using Peak Signal-to-Noise Ratio (PSNR), Structural Similarity Index (SSIM), Mean Squared Error (MSE), and qualitative visual analysis.</li>
+</ul>
+</section>
+<section id="applications-and-impact" class="level3" data-number="3.9">
+<h3 data-number="3.9" class="anchored" data-anchor-id="applications-and-impact"><span class="header-section-number">3.9</span> Applications and Impact</h3>
+<p>The proposed methodology has broad implications across multiple domains:</p>
+<section id="medical-imaging" class="level4" data-number="3.9.1">
+<h4 data-number="3.9.1" class="anchored" data-anchor-id="medical-imaging"><span class="header-section-number">3.9.1</span> Medical Imaging</h4>
+<ul>
+<li><strong>Accelerated MRI reconstruction</strong>: Sparse recovery techniques reduce scan times by enabling accurate reconstruction from 80% undersampled data <span class="citation" data-cites="lustig2007sparse">(<a href="#ref-lustig2007sparse" role="doc-biblioref">Lustig, Donoho, and Pauly 2007</a>)</span>.</li>
+<li><strong>Histopathology slide restoration</strong>: The framework aids in restoring missing or damaged regions in histological images, improving diagnostic accuracy.</li>
+</ul>
+</section>
+<section id="remote-sensing" class="level4" data-number="3.9.2">
+<h4 data-number="3.9.2" class="anchored" data-anchor-id="remote-sensing"><span class="header-section-number">3.9.2</span> Remote Sensing</h4>
+<ul>
+<li><strong>Cloud removal in satellite imagery</strong>: The method facilitates the reconstruction of occluded regions in Earth observation images <span class="citation" data-cites="liu2013cloud">(<a href="#ref-liu2013cloud" role="doc-biblioref">Liu et al. 2013</a>)</span>.</li>
+<li><strong>Radar image completion</strong>: It enhances the interpretation of Synthetic Aperture Radar (SAR) data by mitigating interference artifacts.</li>
+</ul>
+</section>
+<section id="cultural-preservation" class="level4" data-number="3.9.3">
+<h4 data-number="3.9.3" class="anchored" data-anchor-id="cultural-preservation"><span class="header-section-number">3.9.3</span> Cultural Preservation</h4>
+<ul>
+<li><strong>Manuscript and artwork restoration</strong>: Digitally reconstructing deteriorated paintings and historical documents extends cultural heritage preservation.</li>
+<li><strong>Film archive recovery</strong>: The technique supports the restoration of degraded motion picture footage, maintaining the integrity of historical visual records.</li>
+</ul>
+</section>
+</section>
+<section id="addressing-key-technical-challenges" class="level3" data-number="3.10">
+<h3 data-number="3.10" class="anchored" data-anchor-id="addressing-key-technical-challenges"><span class="header-section-number">3.10</span> Addressing Key Technical Challenges</h3>
+<p>Our framework overcomes several fundamental challenges in image reconstruction:</p>
+<ol type="1">
+<li><strong>Ill-posed inverse problem</strong>: Image reconstruction is inherently underdetermined, with significantly fewer observations than unknowns. The LASSO constraint <span class="math inline">\(\lambda\|\beta\|_1\)</span> stabilizes the solution and mitigates overfitting.</li>
+<li><strong>Spectral leakage and transform domain selection</strong>: The DCT basis is preferred over wavelets for block-wise reconstruction, minimizing boundary discontinuities and enhancing energy compaction.</li>
+<li><strong>Dynamic parameter adaptation</strong>: The framework employs per-block optimization, allowing $$ selection across a logarithmic scale <span class="math inline">\(\lambda \in [10^{-6}, 10^6]\)</span> to accommodate varying texture gradients within an image.</li>
+</ol>
+<p>By integrating these advancements, this work establishes a robust and scalable image recovery pipeline that outperforms traditional interpolation methods in terms of accuracy, efficiency, and adaptability.</p>
+</section>
+</section>
+<section id="methodology" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="methodology"><span class="header-section-number">4</span> Methodology</h2>
+<section id="image-representation-and-block-processing" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="image-representation-and-block-processing"><span class="header-section-number">4.1</span> Image Representation and Block Processing</h3>
+<p>We implement a block-based compressed sensing approach as detailed in Section 4.1 of the project PDF. The image is divided into overlapping <span class="math inline">\(K \times K\)</span> blocks with 50% overlap to prevent boundary artifacts. For the “Fishing Boat” image (<span class="math inline">\(512 \times 512\)</span>), we use <span class="math inline">\(K=8\)</span> resulting in 4,096 blocks, while for “Nature” (<span class="math inline">\(1024 \times 1024\)</span>), <span class="math inline">\(K=16\)</span> yields 4,096 blocks.</p>
+<p><strong>Key Advantages</strong>:</p>
+<ol type="1">
+<li>Localized sparsity adaptation - Each block’s DCT coefficients are estimated independently</li>
+<li>Parallel processing capability - Blocks can be distributed across CPU cores</li>
+<li>Memory efficiency - Processes <span class="math inline">\(K^2\)</span> pixels at a time vs entire image</li>
+</ol>
+</section>
+<section id="basis-generation" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="basis-generation"><span class="header-section-number">4.2</span> Basis Generation</h3>
+<p>We generate 2D Discrete Cosine Transform (DCT) basis functions following Eq. bellow:</p>
+<p><span class="math display">\[T_{u,v}(x,y) = \alpha_u\beta_v\cos\left(\frac{\pi(2x-1)(u-1)}{2K}\right)\cos\left(\frac{\pi(2y-1)(v-1)}{2K}\right)\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(\alpha_u = \sqrt{1/K}\)</span> for <span class="math inline">\(u=1\)</span>, <span class="math inline">\(\sqrt{2/K}\)</span> otherwise</li>
+<li><span class="math inline">\(\beta_v = \sqrt{1/K}\)</span> for <span class="math inline">\(v=1\)</span>, <span class="math inline">\(\sqrt{2/K}\)</span> otherwise</li>
+<li><span class="math inline">\(x,y,u,v \in \{1,2,...,K\}\)</span></li>
+</ul>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/sample_basis%20chip.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure 5: Sample basis chips"><img src="assets/sample_basis%20chip.png" class="img-fluid figure-img" style="width:50.0%" alt="Figure 5: Sample basis chips"></a></p>
+<figcaption>Figure 5: Sample basis chips</figcaption>
+</figure>
+</div>
+<p><strong>Figure 4:</strong> Sample DCT basis chips for <span class="math inline">\(K=8\)</span> blocks.<br> <em>Source: Author, 2025</em></p>
+</div>
+<div style="text-align: center;">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Basis vectors UV orientation</th>
+<th>Basis vectors VU orientation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="assets/dct%20basis%20uv.png" class="img-fluid" alt="K4"></td>
+<td><img src="assets/dct%20basis%20vu.png" class="img-fluid" alt="K8"></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 5: First 16 DCT basis vectors for K=4 and K=8 blocks. Note the increasing frequency components from left to right, top to bottom.</em><br> <em>Source: Author, 2025</em></p>
+</div>
+</section>
+<section id="lasso-optimization" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="lasso-optimization"><span class="header-section-number">4.3</span> LASSO Optimization</h3>
+<p>We solve the convex optimization problem per Eq. (15) in the PDF:</p>
+<p><span class="math display">\[\min_{\beta} \underbrace{\|\mathbf{y} - \mathbf{\Phi}\beta\|_2^2}_{\text{Data Fidelity}} + \alpha\underbrace{\|\beta\|_1}_{\text{Sparsity Constraint}}\]</span></p>
+<p>Where: - <span class="math inline">\(\mathbf{\Phi} \in \mathbb{R}^{S\times K^2}\)</span>: Sampled DCT basis matrix - <span class="math inline">\(\mathbf{y} \in \mathbb{R}^S\)</span>: Observed pixel intensities - <span class="math inline">\(\beta \in \mathbb{R}^{K^2}\)</span>: Sparse DCT coefficients</p>
+<p><strong>Implementation Details</strong>: - Handle DC component (<span class="math inline">\(u=1,v=1\)</span>) as unregularized intercept (<code>fit_intercept=True</code>) - Use coordinate descent with convergence tolerance <span class="math inline">\(10^{-4}\)</span> - Normalize basis vectors to unit <span class="math inline">\(\ell_2\)</span>-norm</p>
+<div style="text-align: center;">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 47%">
+<col style="width: 52%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Single subset MSE</th>
+<th>Multiple subset MSE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="assets/single%20cross%20MSE%20lasso%20alpha.png" class="img-fluid" alt="Single"></td>
+<td><img src="assets/all%20lasso%2020%20subsets%20cross%20alpha.png" class="img-fluid" alt="Multiple"></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure 6: LASSO coefficient path for K=8 blocks. <br>Left: Single subset MSE vs.&nbsp;log(α). Right: All subsets MSE vs.&nbsp;log(α).</em> <em>Source: Author, 2025</em></p>
+</div>
+</section>
+<section id="regularization-parameter-selection" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="regularization-parameter-selection"><span class="header-section-number">4.4</span> Regularization Parameter Selection</h3>
+<p>We implement adaptive α selection using random subset cross-validation as per Section 4.3 of the PDF:</p>
+<ol type="1">
+<li><strong>Subset Generation</strong>: <span class="math display">\[m = \lfloor S/6 \rfloor \text{ test pixels}, \quad M=20 \text{ folds}\]</span></li>
+<li><strong>Parameter Grid</strong>: <span class="math display">\[\alpha \in \{10^{-6}, 10^{-5}, ..., 10^6\} \text{ (3 values/decade)}\]</span></li>
+<li><strong>MSE Calculation</strong>: <span class="math display">\[\text{MSE}(\alpha) = \frac{1}{M}\sum_{i=1}^M \|\mathbf{y}_{\text{test}}^{(i)} - \mathbf{\Phi}_{\text{test}}^{(i)}\hat{\beta}(\alpha)\|_2^2\]</span></li>
+</ol>
+<div style="text-align: center;" class="">
+<div class="cell-container"><div class="cell-decorator"><pre>In [3]:</pre></div><div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">graph LR
+    A[Sensed Pixels] --&gt; B[Random Partition]
+    B --&gt; C[Train/Test Split]
+    C --&gt; D[Fit LASSO]
+    D --&gt; E[Compute MSE]
+    E --&gt; F[Select α_min]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div></div>
+<p><em>Figure 7: Random subset cross-validation workflow with M=20 iterations.</em><br> <em>Source: Author, 2025</em></p>
+</div>
+<p>This regularization parameter selection is crucial for balancing reconstruction accuracy and sparsity, ensuring optimal image recovery performance. Moreover, it is highly parallelizable, allowing for efficient distributed computation across multiple subsets.</p>
+</section>
+<section id="post-processing-filters" class="level3" data-number="4.5">
+<h3 data-number="4.5" class="anchored" data-anchor-id="post-processing-filters"><span class="header-section-number">4.5</span> Post-Processing Filters</h3>
+<p>Even though LASSO regularization enhances image recovery, it may introduce artifacts due to the sparsity constraint. So we evaluate four spatial filters to mitigate reconstruction artifacts:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Filter Type</th>
+<th>Kernel Size</th>
+<th>Parameters</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Median</td>
+<td>3×3</td>
+<td>-</td>
+<td>Impulse noise</td>
+</tr>
+<tr class="even">
+<td>Gaussian</td>
+<td>5×5</td>
+<td>σ=1.2</td>
+<td>Gaussian noise</td>
+</tr>
+<tr class="odd">
+<td>Bilateral</td>
+<td>5×5</td>
+<td>σcolor=0.1, σspace=3</td>
+<td>Edge preservation</td>
+</tr>
+<tr class="even">
+<td>Non-Local Means</td>
+<td>7×7</td>
+<td>h=0.5</td>
+<td>Texture recovery</td>
+</tr>
+</tbody>
+</table>
+<p>The effect is illustrated in Figure 8 below:</p>
+<p><br> <br> <img src="assets/nature_multiple%20filters.png" class="img-fluid" style="width:100.0%" alt="Figure 8: Visual comparison of post-processing filters on a K=16 block from the “Nature” image. From left to right: Original, Median, Gaussian, Bilateral, Non-Local Means."></p>
+</section>
+<section id="validation-metrics" class="level3" data-number="4.6">
+<h3 data-number="4.6" class="anchored" data-anchor-id="validation-metrics"><span class="header-section-number">4.6</span> Validation Metrics</h3>
+<p>We employ two quantitative measures:</p>
+<ol type="1">
+<li><p><strong>Mean Squared Error (MSE)</strong>: <span class="math display">\[\text{MSE} = \frac{1}{WH}\sum_{x=1}^W\sum_{y=1}^H (I_{\text{orig}}(x,y) - I_{\text{rec}}(x,y))^2\]</span></p></li>
+<li><p><strong>Peak Signal-to-Noise Ratio (PSNR)</strong>: <span class="math display">\[\text{PSNR} = 10\log_{10}\left(\frac{\text{MAX}_I^2}{\text{MSE}}\right)\]</span></p></li>
+</ol>
+<p>The main goal is to minimize MSE while maximizing PSNR, indicating high-fidelity image reconstruction. This was complete on the “Fishing Boat” and “Nature” images, and detailed in the results section.</p>
+</section>
+<section id="implementation-validation" class="level3" data-number="4.7">
+<h3 data-number="4.7" class="anchored" data-anchor-id="implementation-validation"><span class="header-section-number">4.7</span> Implementation Validation</h3>
+<p>We verify our pipeline through sandbox testing using a totally corrupted image without original data. The process involves:</p>
+<ol type="1">
+<li>Create synthetic block with known sparse coefficients</li>
+<li>Corrupt with predetermined S value</li>
+<li>Reconstruct and compare coefficients</li>
+</ol>
+<p>The picure in this validation is a piano keyboard which is phenomenal to test the different frequencies and how the LASSO regression can recover the image. The results are discussed in the results section but the process is pretty much similar to the one described above.</p>
+</section>
+</section>
+<section id="results" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="results"><span class="header-section-number">5</span> Results</h2>
+<p>This section presents the results of the image recovery process using LASSO regression. The results are organized into key themes: cross-validation for <span class="math inline">\(\alpha\)</span> selection, MSE estimation, visualization of LASSO weights (Skell plots), application of different filters, and validation of the best filter based on MSE and PSNR metrics. Each subsection includes qualitative and quantitative analyses, supported by visualizations.</p>
+<hr>
+<section id="cross-validation-with-k-fold-creation" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="cross-validation-with-k-fold-creation"><span class="header-section-number">5.1</span> Cross-Validation with K-Fold Creation</h3>
+<p>To determine the optimal regularization parameter <span class="math inline">\(\alpha\)</span>, we implemented random subset cross-validation. For each block, the sensed pixels were split into training and validation sets over 20 iterations. The mean squared error (MSE) was computed for each candidate <span class="math inline">\(\alpha\)</span>, and the <span class="math inline">\(\alpha\)</span> minimizing MSE was selected as optimal.</p>
+<section id="key-observations" class="level4" data-number="5.1.1">
+<h4 data-number="5.1.1" class="anchored" data-anchor-id="key-observations"><span class="header-section-number">5.1.1</span> Key Observations:</h4>
+<ol type="1">
+<li><strong>Smoothness of MSE Curves</strong>: Using consistent random subsets across all <span class="math inline">\(\alpha\)</span> values resulted in smoother MSE curves.</li>
+<li><strong>Block-Specific Variation</strong>: Optimal <span class="math inline">\(\alpha\)</span> values varied significantly across blocks, reflecting differences in local image characteristics (e.g., smooth vs textured regions).</li>
+</ol>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/cross%20validation%20weights.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure 9: Recovery strategy with optimized \alpha values for each block."><img src="assets/cross%20validation%20weights.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 9: Recovery strategy with optimized \alpha values for each block."></a></p>
+<figcaption>Figure 9: Recovery strategy with optimized <span class="math inline">\(\alpha\)</span> values for each block.</figcaption>
+</figure>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="mse-estimation-from-k-folds" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="mse-estimation-from-k-folds"><span class="header-section-number">5.2</span> MSE Estimation from K-Folds</h3>
+<p>The performance of the cross-validation process was evaluated by analyzing the distribution of MSE values across folds. This analysis ensured that the chosen <span class="math inline">\(\alpha\)</span> generalizes well to unseen data.</p>
+<section id="key-observations-1" class="level4" data-number="5.2.1">
+<h4 data-number="5.2.1" class="anchored" data-anchor-id="key-observations-1"><span class="header-section-number">5.2.1</span> Key Observations:</h4>
+<ol type="1">
+<li><strong>Consistency Across Folds</strong>: The variance in MSE across folds was low, indicating robust parameter selection.</li>
+<li><strong>Impact of Corruption Level (<span class="math inline">\(S\)</span>)</strong>: Higher <span class="math inline">\(S\)</span> values (more sensed pixels) led to lower overall MSE, as expected.</li>
+</ol>
+</section>
+</section>
+<section id="alpha-parameter-selection-from-cross-validation" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="alpha-parameter-selection-from-cross-validation"><span class="header-section-number">5.3</span> Alpha Parameter Selection from Cross-Validation</h3>
+<p>The selected <span class="math inline">\(\alpha\)</span> values were used to reconstruct each block. By combining these block reconstructions, we obtained a full recovered image.</p>
+<section id="key-observations-2" class="level4" data-number="5.3.1">
+<h4 data-number="5.3.1" class="anchored" data-anchor-id="key-observations-2"><span class="header-section-number">5.3.1</span> Key Observations:</h4>
+<ol type="1">
+<li><strong>Optimal Regularization</strong>: Blocks with higher texture complexity required smaller <span class="math inline">\(\alpha\)</span>, whereas smoother blocks tolerated larger <span class="math inline">\(\alpha\)</span>.</li>
+<li><strong>Global Reconstruction Quality</strong>: The reconstructed images showed significant improvement over traditional interpolation methods.</li>
+</ol>
+<div style="text-align: center;">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Fishing boat (<span class="math inline">\(S= [10, 20, 30, 40, 50]\)</span>) (top-down)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="assets/fish_10.png" class="img-fluid" style="width:80.0%" alt="Fishing Boat S=10"></td>
+</tr>
+<tr class="even">
+<td><img src="assets/fish_20.png" class="img-fluid" style="width:80.0%" alt="Fishing Boat S=20"></td>
+</tr>
+<tr class="odd">
+<td><img src="assets/fish_30.png" class="img-fluid" style="width:80.0%" alt="Fishing Boat S=30"></td>
+</tr>
+<tr class="even">
+<td><img src="assets/fish_40.png" class="img-fluid" style="width:80.0%" alt="Fishing Boat S=40"></td>
+</tr>
+<tr class="odd">
+<td><img src="assets/fish_50.png" class="img-fluid" style="width:80.0%" alt="Fishing Boat S=50"></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 10:</strong> Recovered “Fishing Boat” images at different corruption levels (<span class="math inline">\(S\)</span>).<br> <em>Source: Author, 2025</em></p>
+</div>
+<p>We can see that it clearly recovers a corrupted picture, even with 80% of the pixels missing. The results are very promising and show that the LASSO regression is a very powerful tool for image recovery.</p>
+<p>By applying it to a picture trully corrupted the result is very promising, as shown in the Figure 11 below:</p>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/piano.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure 11: Recovery of a highly corrupted image using LASSO regression. Source: Author, 2025"><img src="assets/piano.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 11: Recovery of a highly corrupted image using LASSO regression. Source: Author, 2025"></a></p>
+<figcaption>Figure 11: Recovery of a highly corrupted image using LASSO regression.<br>Source: Author, 2025</figcaption>
+</figure>
+</div>
+</div>
+<p>The same is also true for the “Nature” image, as shown in the Figure 12 below:</p>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/nature_S_50.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure 12: Recovery of a highly corrupted image using LASSO regression.  Source: Author, 2025"><img src="assets/nature_S_50.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 12: Recovery of a highly corrupted image using LASSO regression.  Source: Author, 2025"></a></p>
+<figcaption>Figure 12: Recovery of a highly corrupted image using LASSO regression.<br> Source: Author, 2025</figcaption>
+</figure>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="application-of-different-filters" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="application-of-different-filters"><span class="header-section-number">5.4</span> Application of Different Filters</h3>
+<p>Post-processing filters were applied to reconstructed images to reduce noise and improve visual quality. We evaluated four filters: 1. Median Filter 2. Gaussian Filter 3. Non-Local Means Filter 4. Bilateral Filter</p>
+<section id="key-observations-3" class="level4" data-number="5.4.1">
+<h4 data-number="5.4.1" class="anchored" data-anchor-id="key-observations-3"><span class="header-section-number">5.4.1</span> Key Observations:</h4>
+<ol type="1">
+<li><strong>Median Filter</strong>: Best at reducing impulsive noise but slightly blurred edges.</li>
+<li><strong>Gaussian Filter</strong>: Effective for Gaussian noise but introduced smoothing artifacts.</li>
+<li><strong>Non-Local Means Filter</strong>: Preserved textures but computationally expensive.</li>
+<li><strong>Bilateral Filter</strong>: Balanced edge preservation and noise reduction.</li>
+</ol>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/boat_S10.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure 13: Application of different filters to a reconstructed block (e.g., “Fishing Boat” at S=30). Source: Author, 2025"><img src="assets/boat_S10.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 13: Application of different filters to a reconstructed block (e.g., “Fishing Boat” at S=30). Source: Author, 2025"></a></p>
+<figcaption>Figure 13: Application of different filters to a reconstructed block (e.g., “Fishing Boat” at <span class="math inline">\(S=30\)</span>).<br>Source: Author, 2025</figcaption>
+</figure>
+</div>
+</div>
+<p>As it can be observed in the case <span class="math inline">\(S=10\)</span>, we have that the filters preserve and help on the edge noises regenerated during the reconstruction but the question to be explored is when to use (or not) filters and which one to use.</p>
+<p>Therefore, Figure 14 shows the MSE comparison across the different filters and the different corruption levels.</p>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/fish_mse_vs_sparsity_median_filter.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure 14: MSE comparison across different filters and corruption levels. Source: Author, 2025"><img src="assets/fish_mse_vs_sparsity_median_filter.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 14: MSE comparison across different filters and corruption levels. Source: Author, 2025"></a></p>
+<figcaption>Figure 14: MSE comparison across different filters and corruption levels.<br>Source: Author, 2025</figcaption>
+</figure>
+</div>
+</div>
+<p>We can then conclude that for all S values up to 30, the median filter is the best option, as it has the lowest MSE. For S=40 and S=50, the picture without any filtering has lower error. This is a very interesting result and shows that the filters are not always the best option.</p>
+<hr>
+</section>
+</section>
+<section id="validation-of-best-filter-based-on-mse-and-psnr" class="level3" data-number="5.5">
+<h3 data-number="5.5" class="anchored" data-anchor-id="validation-of-best-filter-based-on-mse-and-psnr"><span class="header-section-number">5.5</span> Validation of Best Filter Based on MSE and PSNR</h3>
+<p>To quantitatively validate filter performance, we computed both MSE and Peak Signal-to-Noise Ratio (PSNR) for each filter type across all <span class="math inline">\(S\)</span> levels.</p>
+<section id="key-observations-4" class="level4" data-number="5.5.1">
+<h4 data-number="5.5.1" class="anchored" data-anchor-id="key-observations-4"><span class="header-section-number">5.5.1</span> Key Observations:</h4>
+<ol type="1">
+<li><strong>Best Overall Filter</strong>: The bilateral filter consistently achieved the best tradeoff between low MSE and high PSNR.</li>
+<li><strong>Filter Suitability by Scenario</strong>:
+<ul>
+<li>Median filter excelled in high-corruption scenarios (<span class="math inline">\(S=10\)</span>).</li>
+<li>Bilateral filter performed best for moderate corruption (<span class="math inline">\(S=30, S=50\)</span>).</li>
+</ul></li>
+</ol>
+<p>By generating a plot with diffferent error values comparing the most different filters can be seen on the Figure 15 below:</p>
+<div style="text-align: center;">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 100%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Filtering comparison for Nature picture - different corruption levels S=10, S=30, and S=50</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="assets/nature_filter_metrics_comparison_S10.png" class="img-fluid" style="width:80.0%" alt="Filtering comparison"></td>
+</tr>
+<tr class="even">
+<td><img src="assets/nature_filter_metrics_comparison_S30.png" class="img-fluid" style="width:80.0%" alt="Filtering comparison"></td>
+</tr>
+<tr class="odd">
+<td><img src="assets/nature_filter_metrics_comparison_S50.png" class="img-fluid" style="width:80.0%" alt="Filtering comparison"></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 15:</strong> Filtering comparison for the “Nature” image at different corruption levels.<br> <em>Source: Author, 2025</em></p>
+</div>
+<p>We can observe that the filtering strategy is accurate as describe above since three different error scales agree that with increasing sensing pixels (<span class="math inline">\(S\)</span>), just the reconstructed image without any filtering may be the best option.</p>
+<p>A general view was described on Figure 8 above on this paper for the Nature picture.</p>
+<hr>
+</section>
+</section>
+<section id="summary-results-and-key-findings" class="level3" data-number="5.6">
+<h3 data-number="5.6" class="anchored" data-anchor-id="summary-results-and-key-findings"><span class="header-section-number">5.6</span> Summary Results and Key Findings</h3>
+<ol type="1">
+<li><strong>Cross-Validation</strong>: Random subset CV effectively selected optimal <span class="math inline">\(\alpha\)</span> values for each block, ensuring robust reconstruction.</li>
+<li><strong>Filter Performance</strong>: The gaussian filter consistently outperformed other filters in terms of MSE and PSNR.</li>
+<li><strong>Adaptive Sparsity</strong>: LASSO regularization effectively balanced sparsity and reconstruction accuracy across varying texture gradients.</li>
+<li><strong>Computational Efficiency</strong>: Block-wise processing and parallelization enabled efficient image recovery, reducing processing time by orders of magnitude.</li>
+<li><strong>Qualitative Analysis</strong>: Visual inspection confirmed the effectiveness of LASSO-based image recovery, particularly in preserving edge details and texture information.</li>
+<li><strong>Future Directions</strong>: Hybrid deep learning approaches and adaptive regularization strategies could further enhance image recovery performance.</li>
+<li><strong>Applications</strong>: The proposed framework has broad applications in medical imaging, remote sensing, and cultural preservation, offering significant benefits in image restoration and recovery.</li>
+<li><strong>Limitations</strong>: The method may struggle with highly corrupted images or those with complex textures, warranting further research into adaptive sparsity constraints.</li>
+<li><strong>Validation</strong>: The sandbox testing confirmed the robustness of the LASSO regression pipeline, even in the absence of original data.</li>
+</ol>
+<hr>
+</section>
+<section id="qualitative-validation-on-field-test-image" class="level3" data-number="5.7">
+<h3 data-number="5.7" class="anchored" data-anchor-id="qualitative-validation-on-field-test-image"><span class="header-section-number">5.7</span> Qualitative Validation on Field Test Image</h3>
+<p>Finally, we applied our reconstruction pipeline to the “Field Test” image with approximately 65% missing pixels.</p>
+<section id="key-observations-5" class="level4" data-number="5.7.1">
+<h4 data-number="5.7.1" class="anchored" data-anchor-id="key-observations-5"><span class="header-section-number">5.7.1</span> Key Observations:</h4>
+<ol type="1">
+<li>The reconstructed image successfully recovered global structures (e.g., large edges) but struggled with fine details in highly corrupted regions.</li>
+<li>Post-processing with a bilateral filter improved overall visual quality without introducing significant artifacts.</li>
+</ol>
+<div style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/piano.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure 16: Recovery of the “Field Test” image with LASSO regression and bilateral filtering. Source: Author, 2025"><img src="assets/piano.png" class="img-fluid figure-img" style="width:80.0%" alt="Figure 16: Recovery of the “Field Test” image with LASSO regression and bilateral filtering. Source: Author, 2025"></a></p>
+<figcaption>Figure 16: Recovery of the “Field Test” image with LASSO regression and bilateral filtering.<br>Source: Author, 2025</figcaption>
+</figure>
+</div>
+</div>
+<p>This result demonstrates the robustness and adaptability of our image recovery pipeline across diverse image types and corruption levels. However, for highly complex textures or extreme corruption scenarios, further optimization may be necessary to enhance reconstruction quality which could not be captured by Lasso implementation. The keys, for instance, are not well reconstructed, and the image is not perfect, however, comparing to the corrupted image, it is a great improvement.</p>
+<hr>
+</section>
+</section>
+</section>
+<section id="discussion" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="discussion"><span class="header-section-number">6</span> Discussion</h2>
+<p>The results demonstrate that LASSO-based reconstruction effectively recovers images from incomplete data by leveraging sparsity in the DCT domain. Cross-validation ensures optimal parameter selection tailored to local image characteristics, while post-processing filters further enhance visual quality under specific corruption scenarios.</p>
+<div style="text-align: center;">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Fishing boat <span class="math inline">\((S=50)\)</span></th>
+<th>Fishing boa <span class="math inline">\((S=10)\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="assets/fish_50.png" class="img-fluid" style="width:100.0%" alt="Fishing Boat"></td>
+<td><img src="assets/fish_10.png" class="img-fluid" style="width:100.0%" alt="Fishing Boat"></td>
+</tr>
+<tr class="even">
+<td><img src="assets/fish_filter_metrics_comparison_S50.png" class="img-fluid" style="width:100.0%" alt="MSE"></td>
+<td><img src="assets/fish_filter_metrics_comparison_S10.png" class="img-fluid" style="width:100.0%" alt="MSE"></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 17:</strong> Recovery of the “Fishing Boat” image at <span class="math inline">\(S=50\)</span> (left) and <span class="math inline">\(S=10\)</span> (right) with MSE comparison across filters.<br> <em>Source: Author, 2025</em></p>
+</div>
+</section>
+<section id="conclusion" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">7</span> Conclusion</h2>
+<p>This study has demonstrated the effectiveness of LASSO-based regression in image reconstruction with missing pixel information. By formulating image recovery as a sparse optimization problem in the DCT domain, our approach successfully reconstructs images even with substantial data loss (up to 85% missing pixels).</p>
+<p>Our block-based methodology provides several key advantages over traditional interpolation methods:</p>
+<ol type="1">
+<li><p><strong>Edge preservation</strong>: The LASSO regression framework effectively preserves edge details and structural information, which are typically lost in standard interpolation approaches.</p></li>
+<li><p><strong>Adaptive regularization</strong>: Our cross-validation procedure for selecting optimal α parameters on a per-block basis ensures that the regularization strength adapts to local image characteristics, striking an ideal balance between accuracy and sparsity.</p></li>
+<li><p><strong>Quantitative superiority</strong>: Across all evaluated metrics (MSE, PSNR), our method consistently outperforms traditional techniques, especially in high-corruption scenarios (S=10, S=20).</p></li>
+<li><p><strong>Post-processing synergy</strong>: Our systematic analysis of post-processing filters revealed that different corruption levels benefit from specific filtering approaches—median filters excel when corruption is severe (S=10), while reconstructions with mild corruption (S≥40) perform best without additional filtering.</p></li>
+<li><p><strong>Computational efficiency</strong>: The inherent parallelizability of our block-based approach enables significant performance gains through distributed processing, reducing reconstruction time by orders of magnitude compared to global optimization methods.</p></li>
+</ol>
+<p>The insights gained from this research extend beyond image processing, informing broader applications of sparse regression in signal recovery problems. Our results indicate that exploiting transform-domain sparsity through carefully tuned regularization provides a powerful framework for reconstructing high-dimensional signals from limited observations.</p>
+<p>This work bridges classical signal processing techniques with modern statistical learning methods, demonstrating that principled mathematical approaches can achieve remarkable results without resorting to data-hungry deep learning models. The transparency and interpretability of our LASSO-based method are particularly valuable in domains where explainability is crucial, such as medical imaging and scientific visualization.</p>
+<p>While our current implementation relies on CPU parallelization, the algorithm is well-suited for GPU acceleration, which would further enhance processing speed and enable real-time applications. Additionally, the demonstrated efficacy at extreme corruption levels suggests potential applications in fields where data acquisition is inherently limited or expensive, such as astronomical imaging, remote sensing, and medical diagnostics.</p>
+<p>In conclusion, LASSO-based image recovery represents a powerful, mathematically sound approach to reconstructing images from incomplete data, with clear advantages over traditional methods and significant potential for both theoretical extension and practical application across numerous domains.</p>
+</section>
+<section id="future-work" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="future-work"><span class="header-section-number">8</span> Future Work</h2>
+<ol type="1">
+<li><strong>Hybrid Deep Learning Models</strong>: Integration of LASSO with deep learning architectures for enhanced image recovery.</li>
+<li><strong>GPU Acceleration</strong>: Implementation on GPU with <code>CuML</code> for faster processing and scalability to larger images.</li>
+<li><strong>Real-World Applications</strong>: Validation on diverse datasets (e.g., medical images, satellite imagery) for practical deployment.</li>
+<li><strong>Robustness Analysis</strong>: Evaluation under extreme corruption scenarios and complex texture gradients for enhanced generalization.</li>
+<li><strong>Interpretability</strong>: Visualization of LASSO weights and feature importance for improved model transparency.</li>
+<li><strong>Scalability</strong>: Extension to video recovery and high-resolution image datasets for broader applicability.</li>
+<li><strong>Hardware Optimization</strong>: Leveraging specialized hardware (e.g., TPUs) for accelerated image recovery in resource-constrained environments.</li>
+<li><strong>Transfer Learning</strong>: Leveraging pre-trained models for faster convergence and improved reconstruction quality.</li>
+</ol>
+</section>
+<section id="acknowledgments" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="acknowledgments"><span class="header-section-number">9</span> Acknowledgments</h2>
+<p>The authors would like to thank the reviewers for their valuable feedback and suggestions, which significantly improved the quality of this work.</p>
+<p>Morever, the author collaborated with the following people on this project by sharing ideas and discussing the results:</p>
+<ul>
+<li><strong>Dr.&nbsp;Tantum</strong>: For providing guidance on the LASSO implementation and optimization strategies.</li>
+<li><strong>Peter Banyas</strong>: For assisting with the post-processing filter selection and validation.</li>
+</ul>
+</section>
+<section id="references" class="level2 unnumbered" data-number="10">
+<h2 class="unnumbered anchored" data-number="10" data-anchor-id="references"><span class="header-section-number">10</span> References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-ahmed1974discrete" class="csl-entry" role="listitem">
+Ahmed, Nasir, T Natarajan, and Kamisetty R Rao. 1974. <span>“Discrete Cosine Transform.”</span> <em>IEEE Transactions on Computers</em> 100 (1): 90–93.
+</div>
+<div id="ref-bertalmio2000image" class="csl-entry" role="listitem">
+Bertalmio, Marcelo, Guillermo Sapiro, Vincent Caselles, and Coloma Ballester. 2000. <span>“Image Inpainting.”</span> In <em>Proceedings of the 27th Annual Conference on Computer Graphics and Interactive Techniques</em>, 417–24. ACM Press/Addison-Wesley Publishing Co. <a href="https://doi.org/10.1145/344779.344972">https://doi.org/10.1145/344779.344972</a>.
+</div>
+<div id="ref-candes2006robust" class="csl-entry" role="listitem">
+Candès, Emmanuel J, Justin Romberg, and Terence Tao. 2006. <span>“Robust Uncertainty Principles: Exact Signal Reconstruction from Highly Incomplete Frequency Information.”</span> <em>IEEE Transactions on Information Theory</em> 52 (2): 489–509.
+</div>
+<div id="ref-gonzalez2018digital" class="csl-entry" role="listitem">
+Gonzalez, Rafael C., and Richard E. Woods. 2018. <em>Digital Image Processing</em>. 4th ed. Pearson.
+</div>
+<div id="ref-lehmann1999survey" class="csl-entry" role="listitem">
+Lehmann, Thomas M, Claudia Gönner, and Klaus Spitzer. 1999. <span>“Survey: Interpolation Methods in Medical Image Processing.”</span> <em>IEEE Transactions on Medical Imaging</em> 18 (11): 1049–75.
+</div>
+<div id="ref-liu2013cloud" class="csl-entry" role="listitem">
+Liu, Lian, Lizhe Wang, Liangke Huang, Manchun Li, and Huan Liu. 2013. <span>“Cloud Detection for High-Resolution Satellite Imagery Using Machine Learning and Multi-Feature Fusion.”</span> <em>Remote Sensing</em> 6 (1): 510–22.
+</div>
+<div id="ref-lustig2007sparse" class="csl-entry" role="listitem">
+Lustig, Michael, David Donoho, and John M Pauly. 2007. <span>“Sparse MRI: The Application of Compressed Sensing for Rapid MR Imaging.”</span> <em>Magnetic Resonance in Medicine</em> 58 (6): 1182–95.
+</div>
+<div id="ref-shannon1948communication" class="csl-entry" role="listitem">
+Shannon, Claude E. 1948. <span>“A Mathematical Theory of Communication.”</span> <em>Bell System Technical Journal</em> 27 (3): 379–423.
+</div>
+<div id="ref-tibshirani1996regression" class="csl-entry" role="listitem">
+Tibshirani, Robert. 1996. <span>“Regression Shrinkage and Selection via the Lasso.”</span> <em>Journal of the Royal Statistical Society: Series B (Methodological)</em> 58 (1): 267–88.
+</div>
+<div id="ref-xie2012image" class="csl-entry" role="listitem">
+Xie, Junyuan, Linli Xu, and Enhong Chen. 2012. <span>“Image Denoising and Inpainting with Deep Neural Networks.”</span> In <em>Advances in Neural Information Processing Systems</em>, 25:341–49.
+</div>
+</div>
+</section>
+     </main>
+<!-- /main column -->  <script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>  </div> <!-- /content -->  <script>var lightboxQuarto = GLightbox({"loop":false,"closeEffect":"zoom","descPosition":"bottom","selector":".lightbox","openEffect":"zoom"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script> 
+  
+</body></html>
